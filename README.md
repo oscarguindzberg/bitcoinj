@@ -16,6 +16,8 @@ The bitcoinj library is a Java implementation of the Bitcoin protocol, which all
 
 To get started, it is best to have the latest JDK and Maven installed. The HEAD of the `master` branch contains the latest development code and various production releases are provided on feature branches.
 
+If you are using OpenJDK, you will also need OpenJFX.  In Debian-like systems, you will need the `openjfx` package besides the `openjdk-8-jdk` package.
+
 #### Building from the command line
 
 To perform a full build use

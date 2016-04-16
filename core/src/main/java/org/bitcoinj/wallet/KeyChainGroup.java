@@ -270,9 +270,13 @@ public class KeyChainGroup implements KeyBag {
      */
     public void setLookaheadSize(int lookaheadSize) {
         this.lookaheadSize = lookaheadSize;
-        for (DeterministicKeyChain chain : chains) {
+        for (DeterministicKeyChain chain : chains) 
             chain.setLookaheadSize(lookaheadSize);
-        }
+    }
+
+    public void setInsertPubKey(boolean insertPubKey) {
+        for (DeterministicKeyChain chain : chains) 
+            chain.setInsertPubKey(insertPubKey);
     }
 
     /**

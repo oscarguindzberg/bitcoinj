@@ -23,7 +23,7 @@ import java.util.LinkedList;
  */
 public class FilterMerger {
     // We use a constant tweak to avoid giving up privacy when we regenerate our filter with new keys
-    private final long bloomFilterTweak = (long) (Math.random() * Long.MAX_VALUE);
+    private long bloomFilterTweak = (long) (Math.random() * Long.MAX_VALUE);
 
     private volatile double vBloomFilterFPRate;
     private int lastBloomFilterElementCount;
@@ -37,6 +37,10 @@ public class FilterMerger {
         public BloomFilter filter;
         public long earliestKeyTimeSecs;
         public boolean changed;
+    }
+
+    public void setBloomFilterTweak(long bloomFilterTweak) {
+        this.bloomFilterTweak = bloomFilterTweak;
     }
 
     public Result calculate(ImmutableList<PeerFilterProvider> providers) {

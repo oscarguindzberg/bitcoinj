@@ -95,8 +95,8 @@ public class FilteredBlockAndPartialMerkleTreeTests extends TestWithPeerGroup {
         Transaction tx2 = FakeTxBuilder.createFakeTx(params, Coin.FIFTY_COINS, key2.toAddress(params));
         Block block = FakeTxBuilder.makeSolvedTestBlock(params.getGenesisBlock(), new Address(params, "msg2t2V2sWNd85LccoddtWysBTR8oPnkzW"), tx1, tx2);
         BloomFilter filter = new BloomFilter(4, 0.1, 1);
-        filter.insert(key1);
-        filter.insert(key2);
+        filter.insert(key1, true);
+        filter.insert(key2, true);
         FilteredBlock filteredBlock = filter.applyAndUpdate(block);
         assertEquals(4, filteredBlock.getTransactionCount());
         // This call triggers verification of the just created data.

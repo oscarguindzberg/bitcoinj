@@ -1045,6 +1045,11 @@ public class DeterministicKeyChain implements EncryptableKeyChain {
 
 
     @Override
+    public void setInsertPubKey(boolean insertPubKey) {
+        basicKeyChain.setInsertPubKey(insertPubKey);
+    }
+    
+    @Override
     public int numBloomFilterEntries() {
         return numKeys() * 2;
     }
@@ -1088,8 +1093,8 @@ public class DeterministicKeyChain implements EncryptableKeyChain {
     public void setLookaheadSize(int lookaheadSize) {
         lock.lock();
         try {
-            boolean readjustThreshold = this.lookaheadThreshold == calcDefaultLookaheadThreshold();
             this.lookaheadSize = lookaheadSize;
+            boolean readjustThreshold = this.lookaheadThreshold == calcDefaultLookaheadThreshold();
             if (readjustThreshold)
                 this.lookaheadThreshold = calcDefaultLookaheadThreshold();
         } finally {
@@ -1123,6 +1128,8 @@ public class DeterministicKeyChain implements EncryptableKeyChain {
         try {
             if (lookaheadThreshold >= lookaheadSize)
                 return 0;
+            else
+                lookaheadThreshold = calcDefaultLookaheadThreshold();
             return lookaheadThreshold;
         } finally {
             lock.unlock();

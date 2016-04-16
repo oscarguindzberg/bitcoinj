@@ -17,29 +17,38 @@
 
 package org.bitcoinj.core;
 
-import com.google.common.annotations.*;
-import com.google.common.base.*;
-import com.google.common.collect.*;
-import com.google.common.net.*;
-import com.google.common.primitives.*;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.net.InetAddresses;
+import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.*;
-import com.squareup.okhttp.*;
-import com.subgraph.orchid.*;
-import net.jcip.annotations.*;
-import org.bitcoinj.crypto.*;
-import org.bitcoinj.net.*;
-import org.bitcoinj.net.discovery.*;
-import org.bitcoinj.script.*;
-import org.bitcoinj.utils.*;
-import org.bitcoinj.utils.Threading;
-import org.slf4j.*;
-
-import javax.annotation.*;
-import java.io.*;
+import com.subgraph.orchid.TorClient;
+import java.io.IOException;
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.locks.*;
+import java.util.concurrent.locks.ReentrantLock;
+import javax.annotation.Nullable;
+import net.jcip.annotations.GuardedBy;
+import org.bitcoinj.crypto.DRMWorkaround;
+import org.bitcoinj.net.BlockingClientManager;
+import org.bitcoinj.net.ClientConnectionManager;
+import org.bitcoinj.net.FilterMerger;
+import org.bitcoinj.net.NioClientManager;
+import org.bitcoinj.net.discovery.PeerDiscovery;
+import org.bitcoinj.net.discovery.PeerDiscoveryException;
+import org.bitcoinj.net.discovery.TorDiscovery;
+import org.bitcoinj.script.Script;
+import org.bitcoinj.utils.ContextPropagatingThreadFactory;
+import org.bitcoinj.utils.ExponentialBackoff;
+import org.bitcoinj.utils.ListenerRegistration;
+import org.bitcoinj.utils.Threading;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static com.google.common.base.Preconditions.*;
 
@@ -1146,6 +1155,10 @@ public class PeerGroup implements TransactionBroadcaster {
         } finally {
             lock.unlock();
         }
+    }
+
+    public void setBloomFilterTweak(long bloomFilterTweak) {
+        bloomFilterMerger.setBloomFilterTweak(bloomFilterTweak);
     }
 
     /**

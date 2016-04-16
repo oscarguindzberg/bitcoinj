@@ -18,6 +18,7 @@ package org.bitcoinj.core;
 
 import com.google.common.base.*;
 import com.google.common.base.Objects;
+import com.google.common.io.BaseEncoding;
 import org.bitcoinj.store.BlockStore;
 import org.bitcoinj.store.BlockStoreException;
 import org.bitcoinj.utils.ListenerRegistration;
@@ -1575,7 +1576,9 @@ public class Peer extends PeerSocketHandler {
         final VersionMessage ver = vPeerVersionMessage;
         if (ver == null || !ver.isBloomFilteringSupported())
             return;
+        
         vBloomFilter = filter;
+        log.debug("Serialized filter = {}", BaseEncoding.base16().lowerCase().encode(filter.bitcoinSerialize()), "UTF-8");
         log.debug("{}: Sending Bloom filter{}", this, andQueryMemPool ? " and querying mempool" : "");
         sendMessage(filter);
         if (andQueryMemPool)

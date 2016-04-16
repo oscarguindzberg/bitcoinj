@@ -85,6 +85,10 @@ public class WalletAppKit extends AbstractIdleService {
     @Nullable protected PeerDiscovery discovery;
 
     protected volatile Context context;
+    private long bloomFilterTweak = 0;
+    private double bloomFilterFPRate = -1;
+    private int lookaheadSize = -1;
+    private boolean insertPubKey = true;
 
     /**
      * Creates a new WalletAppKit, with a newly created {@link Context}. Files will be stored in the given directory.
@@ -212,6 +216,26 @@ public class WalletAppKit extends AbstractIdleService {
         return this;
     }
 
+    public WalletAppKit setBloomFilterFalsePositiveRate(double bloomFilterFPRate) {
+        this.bloomFilterFPRate = bloomFilterFPRate;
+        return this;
+    }
+
+    public WalletAppKit setBloomFilterTweak(long bloomFilterTweak) {
+        this.bloomFilterTweak = bloomFilterTweak;
+        return this;
+    }
+
+    public WalletAppKit setLookaheadSize(int lookaheadSize) {
+        this.lookaheadSize = lookaheadSize;
+        return this;
+    }
+    
+    public WalletAppKit setInsertPubKey(boolean insertPubKey) {
+        this.insertPubKey = insertPubKey;
+        return this;
+    }
+    
     /**
      * <p>Override this to return wallet extensions if any are necessary.</p>
      *
@@ -309,6 +333,13 @@ public class WalletAppKit extends AbstractIdleService {
             }
             vChain = new BlockChain(params, vStore);
             vPeerGroup = createPeerGroup();
+
+            if(bloomFilterFPRate != -1)
+                vPeerGroup.setBloomFilterFalsePositiveRate(bloomFilterFPRate);
+
+            if(bloomFilterTweak != 0)
+                vPeerGroup.setBloomFilterTweak(bloomFilterTweak);
+
             if (this.userAgent != null)
                 vPeerGroup.setUserAgent(userAgent, version);
 
@@ -409,6 +440,12 @@ public class WalletAppKit extends AbstractIdleService {
             kcg = new KeyChainGroup(params, restoreFromSeed);
         else
             kcg = new KeyChainGroup(params);
+
+        if(lookaheadSize != -1)
+            kcg.setLookaheadSize(lookaheadSize);
+
+        kcg.setInsertPubKey(insertPubKey);
+        
         if (walletFactory != null) {
             return walletFactory.create(params, kcg);
         } else {

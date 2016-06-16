@@ -540,7 +540,7 @@ public class PeerGroup implements TransactionBroadcaster {
                 // potential candidates and then try to connect to all of those when getting connection again.
                 // A check for maxConnections is required to not exceed connections.
                 // TODO: Review
-                if(pendingPeers.size() + peers.size() >= maxConnections)
+                if(pendingPeers.size() + peers.size() < maxConnections)
                     connectTo(addrToTry, false, vConnectTimeoutMillis);
             } finally {
                 lock.unlock();

@@ -1221,6 +1221,14 @@ public class PeerGroup implements TransactionBroadcaster {
         ver.time = Utils.currentTimeSeconds();
 
         Peer peer = new Peer(params, ver, address, chain, downloadTxDependencies);
+
+        // BitcoinJ gets too many connections after a connection loss and reconnect as it adds up a lot of 
+        // potential candidates and then try to connect to all of those when getting connection again.
+        // A check for maxConnections is required to not exceed connections.
+        // TODO: Review if the return of the peer cause any issues.
+        if(pendingPeers.size() + peers.size() >= maxConnections)
+            return peer;
+        
         peer.addEventListener(startupListener, Threading.SAME_THREAD);
         peer.setMinProtocolVersion(vMinRequiredProtocolVersion);
         pendingPeers.add(peer);

@@ -1805,6 +1805,13 @@ public class PeerGroup implements TransactionBroadcaster {
                 final Peer newDownloadPeer = selectDownloadPeer(peers);
                 if (newDownloadPeer != null) {
                     setDownloadPeer(newDownloadPeer);
+
+                    // When using BlockingClient we get errors at shutdown caused by
+                    // startBlockChainDownloadFromPeer()
+                    // We add another check to terminate here if we have been shut down already
+                    if (!isRunning())
+                        return;
+
                     if (downloadListener != null) {
                         startBlockChainDownloadFromPeer(newDownloadPeer);
                     }

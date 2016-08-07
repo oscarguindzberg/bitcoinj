@@ -166,9 +166,10 @@ public abstract class AbstractBlockChain {
         int walletHeight = wallet.getLastBlockSeenHeight();
         int chainHeight = getBestChainHeight();
         if (walletHeight != chainHeight) {
-            log.warn("Wallet/chain height mismatch: {} vs {}", walletHeight, chainHeight);
-            log.warn("Hashes: {} vs {}", wallet.getLastBlockSeenHash(), getChainHead().getHeader().getHash());
-
+            if(walletHeight > 0) {
+                log.warn("Wallet/chain height mismatch: {} vs {}", walletHeight, chainHeight);
+                log.warn("Hashes: {} vs {}", wallet.getLastBlockSeenHash(), getChainHead().getHeader().getHash());
+            }
             // This special case happens when the VM crashes because of a transaction received. It causes the updated
             // block store to persist, but not the wallet. In order to fix the issue, we roll back the block store to
             // the wallet height to make it look like as if the block has never been received.

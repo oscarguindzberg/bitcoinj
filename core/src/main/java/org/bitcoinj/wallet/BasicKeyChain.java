@@ -16,15 +16,15 @@
 
 package org.bitcoinj.wallet;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import com.google.protobuf.ByteString;
 import org.bitcoinj.core.BloomFilter;
 import org.bitcoinj.core.ECKey;
 import org.bitcoinj.crypto.*;
 import org.bitcoinj.store.UnreadableWalletException;
 import org.bitcoinj.utils.ListenerRegistration;
 import org.bitcoinj.utils.Threading;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-import com.google.protobuf.ByteString;
 import org.spongycastle.crypto.params.KeyParameter;
 
 import javax.annotation.Nullable;
@@ -51,7 +51,7 @@ public class BasicKeyChain implements EncryptableKeyChain {
 
     private final CopyOnWriteArrayList<ListenerRegistration<KeyChainEventListener>> listeners;
 
-    private boolean insertPubKey = true;
+    private boolean insertPubKey = false;
 
     public BasicKeyChain() {
         this(null);

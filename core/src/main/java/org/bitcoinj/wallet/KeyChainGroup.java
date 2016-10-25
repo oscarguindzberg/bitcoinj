@@ -17,21 +17,25 @@
 
 package org.bitcoinj.wallet;
 
-import com.google.common.base.*;
-import com.google.common.collect.*;
-import com.google.protobuf.*;
+import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import com.google.protobuf.ByteString;
 import org.bitcoinj.core.*;
 import org.bitcoinj.crypto.*;
-import org.bitcoinj.script.*;
-import org.bitcoinj.store.*;
-import org.bitcoinj.utils.*;
-import org.slf4j.*;
-import org.spongycastle.crypto.params.*;
+import org.bitcoinj.script.Script;
+import org.bitcoinj.script.ScriptBuilder;
+import org.bitcoinj.store.UnreadableWalletException;
+import org.bitcoinj.utils.ListenerRegistration;
+import org.bitcoinj.utils.Threading;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.spongycastle.crypto.params.KeyParameter;
 
-import javax.annotation.*;
-import java.security.*;
+import javax.annotation.Nullable;
+import java.security.SecureRandom;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.Executor;
 
 import static com.google.common.base.Preconditions.*;
 
@@ -272,11 +276,6 @@ public class KeyChainGroup implements KeyBag {
         this.lookaheadSize = lookaheadSize;
         for (DeterministicKeyChain chain : chains) 
             chain.setLookaheadSize(lookaheadSize);
-    }
-
-    public void setInsertPubKey(boolean insertPubKey) {
-        for (DeterministicKeyChain chain : chains) 
-            chain.setInsertPubKey(insertPubKey);
     }
 
     /**

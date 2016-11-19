@@ -71,8 +71,6 @@ public interface KeyChain {
      */
     int numBloomFilterEntries();
 
-    void setInsertPubKey(boolean insertPubKey);
-
     /**
      * <p>Returns the earliest creation time of keys in this chain, in seconds since the epoch. This can return zero
      * if at least one key does not have that data (was created before key timestamping was implemented). If there

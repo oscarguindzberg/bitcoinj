@@ -16,10 +16,10 @@
 
 package org.bitcoinj.core;
 
-import org.bitcoinj.script.Script;
-import org.bitcoinj.script.ScriptChunk;
 import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
+import org.bitcoinj.script.Script;
+import org.bitcoinj.script.ScriptChunk;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -237,9 +237,9 @@ public class BloomFilter extends Message {
     }
 
     /** Inserts the given key and equivalent hashed form (for the address). */
-    public synchronized void insert(ECKey key, boolean insertPubKey) {
-        if(insertPubKey)
-            insert(key.getPubKey());
+    public synchronized void insert(ECKey key) {
+        // Previous attempts to insert only the PubKeyHash causes issues with missing updates for P2SH tx and re-sync
+        insert(key.getPubKey());
         insert(key.getPubKeyHash());
     }
 

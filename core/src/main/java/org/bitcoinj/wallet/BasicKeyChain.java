@@ -51,8 +51,6 @@ public class BasicKeyChain implements EncryptableKeyChain {
 
     private final CopyOnWriteArrayList<ListenerRegistration<KeyChainEventListener>> listeners;
 
-    private boolean insertPubKey = false;
-
     public BasicKeyChain() {
         this(null);
     }
@@ -559,17 +557,12 @@ public class BasicKeyChain implements EncryptableKeyChain {
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     @Override
-    public void setInsertPubKey(boolean insertPubKey) {
-        this.insertPubKey = insertPubKey;
-    }
-    
-    @Override
     public BloomFilter getFilter(int size, double falsePositiveRate, long tweak) {
         lock.lock();
         try {
             BloomFilter filter = new BloomFilter(size, falsePositiveRate, tweak);
-            for (ECKey key : hashToKeys.values()) 
-                    filter.insert(key, insertPubKey);
+            for (ECKey key : hashToKeys.values())
+                filter.insert(key);
             return filter;
         } finally {
             lock.unlock();

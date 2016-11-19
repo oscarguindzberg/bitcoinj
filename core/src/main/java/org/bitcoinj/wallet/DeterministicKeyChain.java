@@ -16,6 +16,10 @@
 
 package org.bitcoinj.wallet;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterators;
+import com.google.common.collect.PeekingIterator;
+import com.google.protobuf.ByteString;
 import org.bitcoinj.core.BloomFilter;
 import org.bitcoinj.core.ECKey;
 import org.bitcoinj.core.NetworkParameters;
@@ -24,11 +28,6 @@ import org.bitcoinj.crypto.*;
 import org.bitcoinj.script.Script;
 import org.bitcoinj.store.UnreadableWalletException;
 import org.bitcoinj.utils.Threading;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterators;
-import com.google.common.collect.PeekingIterator;
-import com.google.protobuf.ByteString;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.spongycastle.crypto.params.KeyParameter;
@@ -1043,11 +1042,6 @@ public class DeterministicKeyChain implements EncryptableKeyChain {
     //
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-
-    @Override
-    public void setInsertPubKey(boolean insertPubKey) {
-        basicKeyChain.setInsertPubKey(insertPubKey);
-    }
     
     @Override
     public int numBloomFilterEntries() {

@@ -17,19 +17,26 @@
 
 package org.bitcoinj.core;
 
-import com.google.common.collect.*;
-import org.bitcoinj.core.TransactionConfidence.*;
-import org.bitcoinj.store.*;
-import org.bitcoinj.testing.*;
-import org.bitcoinj.wallet.*;
-import org.junit.*;
-import org.junit.runner.*;
-import org.junit.runners.*;
+import com.google.common.collect.Lists;
+import org.bitcoinj.core.TransactionConfidence.ConfidenceType;
+import org.bitcoinj.store.MemoryBlockStore;
+import org.bitcoinj.testing.FakeTxBuilder;
+import org.bitcoinj.testing.InboundMessageQueuer;
+import org.bitcoinj.testing.TestWithPeerGroup;
+import org.bitcoinj.wallet.KeyChainGroup;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
-import java.math.*;
-import java.util.*;
+import java.math.BigInteger;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Set;
 
-import static org.bitcoinj.core.Utils.*;
+import static org.bitcoinj.core.Utils.HEX;
 import static org.junit.Assert.*;
 
 @RunWith(value = Parameterized.class)
@@ -95,8 +102,8 @@ public class FilteredBlockAndPartialMerkleTreeTests extends TestWithPeerGroup {
         Transaction tx2 = FakeTxBuilder.createFakeTx(params, Coin.FIFTY_COINS, key2.toAddress(params));
         Block block = FakeTxBuilder.makeSolvedTestBlock(params.getGenesisBlock(), new Address(params, "msg2t2V2sWNd85LccoddtWysBTR8oPnkzW"), tx1, tx2);
         BloomFilter filter = new BloomFilter(4, 0.1, 1);
-        filter.insert(key1, true);
-        filter.insert(key2, true);
+        filter.insert(key1);
+        filter.insert(key2);
         FilteredBlock filteredBlock = filter.applyAndUpdate(block);
         assertEquals(4, filteredBlock.getTransactionCount());
         // This call triggers verification of the just created data.

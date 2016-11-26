@@ -1325,6 +1325,11 @@ public class DeterministicKeyChain implements EncryptableKeyChain {
         throw new UnsupportedOperationException();
     }
 
+    public void printAllPubKeysAsHex(StringBuilder stringBuilder) {
+        for (ECKey key : getKeys(false))
+            stringBuilder.append('"').append(Utils.HEX.encode(key.getPubKey())).append('"').append(",\n");
+    }
+    
     public String toString(boolean includePrivateKeys, NetworkParameters params) {
         final StringBuilder builder2 = new StringBuilder();
         if (seed != null) {

@@ -17,35 +17,49 @@
 
 package org.bitcoinj.core;
 
-import com.google.common.annotations.*;
-import com.google.common.base.*;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Objects;
-import com.google.common.base.Objects.*;
+import com.google.common.base.Objects.ToStringHelper;
+import com.google.common.base.Throwables;
 import com.google.common.collect.*;
-import com.google.common.primitives.*;
-import com.google.common.util.concurrent.*;
-import com.google.protobuf.*;
-import net.jcip.annotations.*;
-import org.bitcoin.protocols.payments.Protos.*;
-import org.bitcoinj.core.TransactionConfidence.*;
+import com.google.common.primitives.Ints;
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.SettableFuture;
+import com.google.protobuf.ByteString;
+import net.jcip.annotations.GuardedBy;
+import org.bitcoin.protocols.payments.Protos.PaymentDetails;
+import org.bitcoinj.core.TransactionConfidence.ConfidenceType;
 import org.bitcoinj.crypto.*;
-import org.bitcoinj.params.*;
-import org.bitcoinj.script.*;
-import org.bitcoinj.signers.*;
-import org.bitcoinj.store.*;
-import org.bitcoinj.utils.*;
+import org.bitcoinj.params.UnitTestParams;
+import org.bitcoinj.script.Script;
+import org.bitcoinj.script.ScriptBuilder;
+import org.bitcoinj.script.ScriptChunk;
+import org.bitcoinj.signers.LocalTransactionSigner;
+import org.bitcoinj.signers.MissingSigResolutionSigner;
+import org.bitcoinj.signers.TransactionSigner;
+import org.bitcoinj.store.UnreadableWalletException;
+import org.bitcoinj.store.WalletProtobufSerializer;
+import org.bitcoinj.utils.BaseTaggableObject;
+import org.bitcoinj.utils.ExchangeRate;
+import org.bitcoinj.utils.ListenerRegistration;
+import org.bitcoinj.utils.Threading;
 import org.bitcoinj.wallet.*;
-import org.bitcoinj.wallet.Protos.Wallet.*;
-import org.bitcoinj.wallet.WalletTransaction.*;
-import org.slf4j.*;
-import org.spongycastle.crypto.params.*;
+import org.bitcoinj.wallet.Protos.Wallet.EncryptionType;
+import org.bitcoinj.wallet.WalletTransaction.Pool;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.spongycastle.crypto.params.KeyParameter;
 
-import javax.annotation.*;
+import javax.annotation.Nullable;
 import java.io.*;
 import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
-import java.util.concurrent.locks.*;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantLock;
 
 import static com.google.common.base.Preconditions.*;
 
@@ -2727,7 +2741,10 @@ public class Wallet extends BaseTaggableObject implements Serializable, BlockCha
         return toString(false, true, true, null);
     }
 
-
+    public String printAllPubKeysAsHex() {
+        return keychain.printAllPubKeysAsHex();
+    }
+    
     /**
      * Formats the wallet as a human readable piece of text. Intended for debugging, the format is not meant to be
      * stable or human readable.

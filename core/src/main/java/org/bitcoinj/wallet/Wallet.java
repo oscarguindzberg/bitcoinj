@@ -3165,6 +3165,9 @@ public class Wallet extends BaseTaggableObject
         return toString(false, true, true, null);
     }
 
+    public String printAllPubKeysAsHex() {
+        return keyChainGroup.printAllPubKeysAsHex();
+    }
 
     /**
      * Formats the wallet as a human readable piece of text. Intended for debugging, the format is not meant to be

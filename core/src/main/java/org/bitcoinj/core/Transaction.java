@@ -17,6 +17,9 @@
 
 package org.bitcoinj.core;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.primitives.Ints;
+import com.google.common.primitives.Longs;
 import org.bitcoinj.core.TransactionConfidence.ConfidenceType;
 import org.bitcoinj.crypto.TransactionSignature;
 import org.bitcoinj.script.Script;
@@ -24,9 +27,6 @@ import org.bitcoinj.script.ScriptBuilder;
 import org.bitcoinj.script.ScriptOpCodes;
 import org.bitcoinj.utils.ExchangeRate;
 import org.bitcoinj.wallet.WalletTransaction.Pool;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.primitives.Ints;
-import com.google.common.primitives.Longs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,8 +34,9 @@ import javax.annotation.Nullable;
 import java.io.*;
 import java.util.*;
 
-import static org.bitcoinj.core.Utils.*;
 import static com.google.common.base.Preconditions.checkState;
+import static org.bitcoinj.core.Utils.HEX;
+import static org.bitcoinj.core.Utils.uint32ToByteStreamLE;
 
 /**
  * <p>A transaction represents the movement of coins from some addresses to some other addresses. It can also represent
@@ -686,9 +687,16 @@ public class Transaction extends ChildMessage implements Serializable {
             s.append("out  ");
             try {
                 Script scriptPubKey = out.getScriptPubKey();
-                s.append(scriptPubKey);
+                s.append(scriptPubKey.toString());
                 s.append(" ");
                 s.append(out.getValue().toFriendlyString());
+                s.append(" (");
+                s.append(out.getValue());
+                s.append(") ScriptPubKey: ");
+                s.append(HEX.encode(scriptPubKey.getProgram()));
+                s.append(" Address:");
+                s.append(scriptPubKey.getToAddress(params));
+                s.append(" ");
                 if (!out.isAvailableForSpending()) {
                     s.append(" Spent");
                 }

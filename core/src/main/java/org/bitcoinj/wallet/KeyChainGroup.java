@@ -90,6 +90,13 @@ public class KeyChainGroup implements KeyBag {
     }
 
     /**
+     * Creates a keychain group with the given chain.
+     */
+    public KeyChainGroup(NetworkParameters params, DeterministicKeyChain chain) {
+        this(params, null, ImmutableList.of(chain), null, null);
+    }
+
+    /**
      * Creates a keychain group with no basic chain, and an HD chain that is watching the given watching key.
      * This HAS to be an account key as returned by {@link DeterministicKeyChain#getWatchingKey()}.
      */

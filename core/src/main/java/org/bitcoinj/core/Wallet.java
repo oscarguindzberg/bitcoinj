@@ -3907,7 +3907,7 @@ public class Wallet extends BaseTaggableObject implements Serializable, BlockCha
         UTXOProvider utxoProvider = checkNotNull(vUTXOProvider, "No UTXO provider has been set");
         // We might get duplicate outputs from the provider and from our pending tx outputs
         // To avoid duplicate entries we use a set.
-        Set<TransactionOutput> candidates = new HashSet();
+        Set<TransactionOutput> candidates = new HashSet<TransactionOutput>();
         try {
             int chainHeight = utxoProvider.getChainHeadHeight();
             for (UTXO output : getStoredOutputsFromUTXOProvider()) {

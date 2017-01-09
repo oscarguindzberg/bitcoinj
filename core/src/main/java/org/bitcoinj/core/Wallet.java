@@ -132,7 +132,7 @@ public class Wallet extends BaseTaggableObject implements Serializable, BlockCha
     //           re-org to a chain that doesn't include the double spend.
 
     @VisibleForTesting
-    final Map<Sha256Hash, Transaction> pending;
+    protected final Map<Sha256Hash, Transaction> pending;
     @VisibleForTesting
     final Map<Sha256Hash, Transaction> unspent;
     @VisibleForTesting
@@ -225,7 +225,7 @@ public class Wallet extends BaseTaggableObject implements Serializable, BlockCha
 
     // If this is set then the wallet selects spendable candidate outputs from a UTXO provider.
     @Nullable
-    private volatile UTXOProvider vUTXOProvider;
+    protected volatile UTXOProvider vUTXOProvider;
 
     /**
      * Creates a new, empty wallet with a randomly chosen seed and no transactions. Make sure to provide for sufficient
@@ -4039,7 +4039,7 @@ public class Wallet extends BaseTaggableObject implements Serializable, BlockCha
      * required for spending without actually having all the linked data (i.e parent tx).
      *
      */
-    private class FreeStandingTransactionOutput extends TransactionOutput {
+    protected class FreeStandingTransactionOutput extends TransactionOutput {
         private UTXO output;
         private int chainHeight;
 

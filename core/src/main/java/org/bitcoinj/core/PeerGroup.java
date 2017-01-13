@@ -1016,22 +1016,25 @@ public class PeerGroup implements TransactionBroadcaster {
         int newMax;
         lock.lock();
         try {
-            addInactive(peerAddress);
-            newMax = getMaxConnections() + 1;
+            if( addInactive(peerAddress) ) {
+                newMax = getMaxConnections() + 1;
+                setMaxConnections(newMax);
+            }
         } finally {
             lock.unlock();
         }
-        setMaxConnections(newMax);
     }
 
-    private void addInactive(PeerAddress peerAddress) {
+    private boolean addInactive(PeerAddress peerAddress) {
         lock.lock();
         try {
             // Deduplicate
-            if (backoffMap.containsKey(peerAddress))
-                return;
+            if (backoffMap.containsKey(peerAddress)) {
+                return false;
+            }
             backoffMap.put(peerAddress, new ExponentialBackoff(peerBackoffParams));
             inactives.offer(peerAddress);
+            return true;
         } finally {
             lock.unlock();
         }
@@ -1083,8 +1086,14 @@ public class PeerGroup implements TransactionBroadcaster {
         final List<PeerAddress> addressList = Lists.newLinkedList();
         for (PeerDiscovery peerDiscovery : peerDiscoverers /* COW */) {
             InetSocketAddress[] addresses;
-            addresses = peerDiscovery.getPeers(requiredServices, peerDiscoveryTimeoutMillis, TimeUnit.MILLISECONDS);
-            for (InetSocketAddress address : addresses) addressList.add(new PeerAddress(params, address));
+            try {
+                addresses = peerDiscovery.getPeers(requiredServices, peerDiscoveryTimeoutMillis, TimeUnit.MILLISECONDS);
+            }catch(PeerDiscoveryException e) {
+                log.warn(e.getMessage());
+                continue;
+            }
+
+            for (InetSocketAddress address : addresses) addressList.add(new PeerAddress(address));
             if (addressList.size() >= maxPeersToDiscoverCount) break;
         }
         if (!addressList.isEmpty()) {

@@ -17,6 +17,13 @@
 package org.bitcoinj.core;
 
 import org.bitcoinj.params.MainNetParams;
+import org.bitcoinj.net.AddressChecker;
+import org.bitcoinj.net.OnionCat;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Objects;
 import com.google.common.net.InetAddresses;
 
 import java.io.IOException;
@@ -30,11 +37,14 @@ import static org.bitcoinj.core.Utils.uint32ToByteStreamLE;
 import static org.bitcoinj.core.Utils.uint64ToByteStreamLE;
 import static com.google.common.base.Preconditions.checkNotNull;
 
+
 /**
  * A PeerAddress holds an IP address and port number representing the network location of
  * a peer in the Bitcoin P2P network. It exists primarily for serialization purposes.
  */
 public class PeerAddress extends ChildMessage {
+    private static final Logger log = LoggerFactory.getLogger(PeerAddress.class);
+
     private static final long serialVersionUID = 7501293709324197411L;
     static final int MESSAGE_SIZE = 30;
 
@@ -102,17 +112,28 @@ public class PeerAddress extends ChildMessage {
      * InetAddress or a String hostname. If you want to connect to a .onion, set the hostname to the .onion address.
      */
     public PeerAddress(InetSocketAddress addr) {
-        if (addr.getHostName() == null || !addr.getHostName().toLowerCase().endsWith(".onion")) {
+        /* socks addresses, eg Tor, use hostname only because no local lookup is performed.
+         * includes .onion hidden services.
+         */
+        String host = addr.getHostString();
+        if( host != null && host.endsWith(".onion") ) {
+            this.hostname = host;
+            try {
+                this.addr = OnionCat.onionHostToInetAddress(this.hostname);
+            }
+            catch (UnknownHostException e) {
+                log.warn( "Invalid format for onion address: {}", this.hostname );
+            }
+        }
+        else {
             this.addr = checkNotNull(addr.getAddress());
-        } else {
-            this.hostname = addr.getHostName();
         }
         this.port = addr.getPort();
         this.protocolVersion = NetworkParameters.PROTOCOL_VERSION;
         this.services = BigInteger.ZERO;
         length = protocolVersion > 31402 ? MESSAGE_SIZE : MESSAGE_SIZE - 4;
     }
-
+    
     public static PeerAddress localhost(NetworkParameters params) {
         return new PeerAddress(InetAddresses.forString("127.0.0.1"), params.getPort());
     }
@@ -127,14 +148,25 @@ public class PeerAddress extends ChildMessage {
             uint32ToByteStreamLE(secs, stream);
         }
         uint64ToByteStreamLE(services, stream);  // nServices.
-        // Java does not provide any utility to map an IPv4 address into IPv6 space, so we have to do it by hand.
-        byte[] ipBytes = addr.getAddress();
-        if (ipBytes.length == 4) {
-            byte[] v6addr = new byte[16];
-            System.arraycopy(ipBytes, 0, v6addr, 12, 4);
-            v6addr[10] = (byte) 0xFF;
-            v6addr[11] = (byte) 0xFF;
-            ipBytes = v6addr;
+
+        AddressChecker addrChecker = new AddressChecker();
+        byte[] ipBytes;
+        if( addrChecker.IsOnionCatTor( addr ) ) {
+            ipBytes = OnionCat.onionHostToIPV6Bytes( hostname );
+        }
+        else if( addr != null ) {
+            // Java does not provide any utility to map an IPv4 address into IPv6 space, so we have to do it by hand.
+            ipBytes = addr.getAddress();
+            if (ipBytes.length == 4) {
+                byte[] v6addr = new byte[16];
+                System.arraycopy(ipBytes, 0, v6addr, 12, 4);
+                v6addr[10] = (byte) 0xFF;
+                v6addr[11] = (byte) 0xFF;
+                ipBytes = v6addr;
+            }
+        }
+        else {
+            ipBytes = new byte[16];  // zero-filled.
         }
         stream.write(ipBytes);
         // And write out the port. Unlike the rest of the protocol, address and port is in big endian byte order.
@@ -160,8 +192,13 @@ public class PeerAddress extends ChildMessage {
             time = -1;
         services = readUint64();
         byte[] addrBytes = readBytes(16);
+        AddressChecker addrChecker = new AddressChecker();
         try {
             addr = InetAddress.getByAddress(addrBytes);
+            
+            if( addrChecker.IsOnionCatTor( addr )) {
+                hostname = OnionCat.IPV6BytesToOnionHost( addr.getAddress() );
+            }
         } catch (UnknownHostException e) {
             throw new RuntimeException(e);  // Cannot happen.
         }
@@ -236,24 +273,20 @@ public class PeerAddress extends ChildMessage {
         if (hostname != null) {
             return "[" + hostname + "]:" + port;
         }
-        return "[" + addr.getHostAddress() + "]:" + port;
+        if(addr != null ) {
+            return "[" + addr.getHostAddress() + "]:" + port;
+        }
+        return "[]";
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        PeerAddress other = (PeerAddress) o;
-        return other.addr.equals(addr) &&
-                other.port == port &&
-                other.services.equals(services) &&
-                other.time == time;
-        //TODO: including services and time could cause same peer to be added multiple times in collections
+        return o.toString().equals(this.toString());
     }
 
     @Override
     public int hashCode() {
-        return addr.hashCode() ^ port ^ (int) time ^ services.hashCode();
+        return Objects.hashCode(this.toString());
     }
     
     public InetSocketAddress toSocketAddress() {
@@ -263,5 +296,6 @@ public class PeerAddress extends ChildMessage {
         } else {
             return new InetSocketAddress(addr, port);
         }
-    }
+    }   
+
 }

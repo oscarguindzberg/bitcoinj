@@ -151,6 +151,19 @@ public class PeerGroup implements TransactionBroadcaster {
         public List<Message> getData(Peer peer, GetDataMessage m) {
             return handleGetData(m);
         }
+        
+        @Override
+        public Message onPreMessageReceived(Peer peer, Message m) {
+            
+            if(m instanceof AddressMessage) {
+                for( PeerAddress peerAddress : ((AddressMessage)m).getAddresses() ) {
+                    addInactive(peerAddress);
+                }
+            }
+            
+            // Just pass the message right through for further processing.
+            return m;
+        }        
 
         @Override
         public void onBlocksDownloaded(Peer peer, Block block, @Nullable FilteredBlock filteredBlock, int blocksLeft) {
@@ -744,22 +757,25 @@ public class PeerGroup implements TransactionBroadcaster {
         int newMax;
         lock.lock();
         try {
-            addInactive(peerAddress);
-            newMax = getMaxConnections() + 1;
+            if( addInactive(peerAddress) ) {
+                newMax = getMaxConnections() + 1;
+                setMaxConnections(newMax);
+            }
         } finally {
             lock.unlock();
         }
-        setMaxConnections(newMax);
     }
 
-    private void addInactive(PeerAddress peerAddress) {
+    private boolean addInactive(PeerAddress peerAddress) {
         lock.lock();
         try {
             // Deduplicate
-            if (backoffMap.containsKey(peerAddress))
-                return;
+            if (backoffMap.containsKey(peerAddress)) {
+                return false;
+            }
             backoffMap.put(peerAddress, new ExponentialBackoff(peerBackoffParams));
             inactives.offer(peerAddress);
+            return true;
         } finally {
             lock.unlock();
         }
@@ -794,7 +810,13 @@ public class PeerGroup implements TransactionBroadcaster {
         final List<PeerAddress> addressList = Lists.newLinkedList();
         for (PeerDiscovery peerDiscovery : peerDiscoverers /* COW */) {
             InetSocketAddress[] addresses;
-            addresses = peerDiscovery.getPeers(5, TimeUnit.SECONDS);
+            try {
+                addresses = peerDiscovery.getPeers(5, TimeUnit.SECONDS);
+            }
+            catch(PeerDiscoveryException e) {
+                log.warn(e.getMessage());
+                continue;
+            }
             for (InetSocketAddress address : addresses) addressList.add(new PeerAddress(address));
             if (addressList.size() >= maxPeersToDiscoverCount) break;
         }

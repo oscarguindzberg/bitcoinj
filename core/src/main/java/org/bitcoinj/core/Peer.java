@@ -16,19 +16,20 @@
 
 package org.bitcoinj.core;
 
-import com.google.common.base.*;
 import com.google.common.base.Objects;
-import com.google.common.io.BaseEncoding;
-import org.bitcoinj.store.BlockStore;
-import org.bitcoinj.store.BlockStoreException;
-import org.bitcoinj.utils.ListenerRegistration;
-import org.bitcoinj.utils.Threading;
+import com.google.common.base.Preconditions;
+import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
+import com.google.common.io.BaseEncoding;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
 import net.jcip.annotations.GuardedBy;
+import org.bitcoinj.store.BlockStore;
+import org.bitcoinj.store.BlockStoreException;
+import org.bitcoinj.utils.ListenerRegistration;
+import org.bitcoinj.utils.Threading;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -402,7 +403,7 @@ public class Peer extends PeerSocketHandler {
         } else if (m instanceof UTXOsMessage) {
             processUTXOMessage((UTXOsMessage) m);
         } else if (m instanceof RejectMessage) {
-            log.error("{} {}: Received {}", this, getPeerVersionMessage().subVer, m);
+            log.warn("{} {}: Received {}", this, getPeerVersionMessage().subVer, m);
         } else {
             log.warn("{}: Received unhandled message: {}", this, m);
         }

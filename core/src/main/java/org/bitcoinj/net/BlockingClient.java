@@ -16,18 +16,22 @@
 
 package org.bitcoinj.net;
 
-import com.google.common.util.concurrent.*;
-import org.bitcoinj.core.*;
-import org.slf4j.*;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.SettableFuture;
+import org.bitcoinj.core.Context;
+import org.slf4j.LoggerFactory;
 
-import javax.annotation.*;
-import javax.net.*;
-import java.io.*;
-import java.net.*;
-import java.nio.*;
-import java.util.*;
+import javax.annotation.Nullable;
+import javax.net.SocketFactory;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.Socket;
+import java.net.SocketAddress;
+import java.nio.ByteBuffer;
+import java.util.Set;
 
-import static com.google.common.base.Preconditions.*;
+import static com.google.common.base.Preconditions.checkState;
 
 /**
  * <p>Creates a simple connection to a server using a {@link StreamParser} to process data.</p>
@@ -142,7 +146,7 @@ public class BlockingClient implements MessageWriteTarget {
             stream.write(message);
             stream.flush();
         } catch (IOException e) {
-            log.error("Error writing message to connection, closing connection", e);
+            log.warn("Error writing message to connection, closing connection", e);
             closeConnection();
             throw e;
         }

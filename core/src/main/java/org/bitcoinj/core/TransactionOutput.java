@@ -17,12 +17,18 @@
 
 package org.bitcoinj.core;
 
-import org.bitcoinj.script.*;
-import org.slf4j.*;
+import org.bitcoinj.script.Script;
+import org.bitcoinj.script.ScriptBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import javax.annotation.*;
-import java.io.*;
-import java.util.*;
+import javax.annotation.Nullable;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
+import java.io.Serializable;
+import java.util.Arrays;
+import java.util.List;
 
 import static com.google.common.base.Preconditions.*;
 
@@ -240,7 +246,7 @@ public class TransactionOutput extends ChildMessage implements Serializable {
 
     /**
      * Returns the minimum value for this output to be considered "not dust", i.e. the transaction will be relayable
-     * and mined by default miners. For normal pay to address outputs, this is 546 satoshis, the same as
+     * and mined by default miners. For normal pay to address outputs, this is 2730 satoshis, the same as
      * {@link Transaction#MIN_NONDUST_OUTPUT}.
      */
     public Coin getMinNonDustValue() {

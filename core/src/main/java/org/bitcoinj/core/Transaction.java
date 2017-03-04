@@ -96,9 +96,9 @@ public class Transaction extends ChildMessage implements Serializable {
     /**
      * Any standard (ie pay-to-address) output smaller than this value (in satoshis) will most likely be rejected by the network.
      * This is calculated by assuming a standard output will be 34 bytes, and then using the formula used in
-     * {@link TransactionOutput#getMinNonDustValue(Coin)}. Currently it's 546 satoshis.
+     * {@link TransactionOutput#getMinNonDustValue(Coin)}. Currently it's 2730 satoshis.
      */
-    public static final Coin MIN_NONDUST_OUTPUT = Coin.valueOf(546);
+    public static final Coin MIN_NONDUST_OUTPUT = Coin.valueOf(2730);
 
     // These are serialized in both bitcoin and java serialization.
     private long version;

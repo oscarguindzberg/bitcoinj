@@ -892,6 +892,8 @@ public class PeerGroup implements TransactionBroadcaster {
                 } catch (IOException e) {
                     // Ignore.
                 }
+                // If we are connected to localhost we don't want to get other peers added from AddressMessage calls.
+                setAddPeersFromAddressMessage(false);
                 return true;
             } catch (IOException e) {
                 log.info("Localhost peer not detected.");

@@ -130,6 +130,9 @@ public class PeerGroup implements TransactionBroadcaster {
     // How many connections we want to have open at the current time. If we lose connections, we'll try opening more
     // until we reach this count.
     @GuardedBy("lock") private int maxConnections;
+    // if true, we will listen to "addr" network messages and add nodes discovered this way.
+    // if false, only nodes found by discovery process are used/added.
+    @GuardedBy("lock") private boolean networkPeerDiscovery = true;    
     // Minimum protocol version we will allow ourselves to connect to: require Bloom filtering.
     private volatile int vMinRequiredProtocolVersion = FilteredBlock.MIN_PROTOCOL_VERSION;
 
@@ -154,8 +157,7 @@ public class PeerGroup implements TransactionBroadcaster {
         
         @Override
         public Message onPreMessageReceived(Peer peer, Message m) {
-            
-            if(m instanceof AddressMessage) {
+            if(m instanceof AddressMessage && networkPeerDiscovery) {
                 for( PeerAddress peerAddress : ((AddressMessage)m).getAddresses() ) {
                     addInactive(peerAddress);
                 }
@@ -452,6 +454,20 @@ public class PeerGroup implements TransactionBroadcaster {
 
         if (adjustment < 0)
             channels.closeConnections(-adjustment);
+    }
+
+    /**
+     * Switch for enabling network peer discovery.
+     *   if true, we will listen to "addr" network messages and add nodes discovered this way.
+     *   if false, only nodes found by discovery process are used/added.
+     */
+    public void setNetworkPeerDiscovery(boolean networkPeerDiscovery) {
+        lock.lock();
+        try {
+            this.networkPeerDiscovery = networkPeerDiscovery;
+        } finally {
+            lock.unlock();
+        }
     }
 
     /**

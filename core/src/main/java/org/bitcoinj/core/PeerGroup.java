@@ -27,12 +27,6 @@ import com.google.common.net.InetAddresses;
 import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.*;
 import com.subgraph.orchid.TorClient;
-import java.io.IOException;
-import java.net.*;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.locks.ReentrantLock;
-import javax.annotation.Nullable;
 import net.jcip.annotations.GuardedBy;
 import org.bitcoinj.crypto.DRMWorkaround;
 import org.bitcoinj.net.BlockingClientManager;
@@ -49,6 +43,13 @@ import org.bitcoinj.utils.ListenerRegistration;
 import org.bitcoinj.utils.Threading;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.annotation.Nullable;
+import java.io.IOException;
+import java.net.*;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.locks.ReentrantLock;
 
 import static com.google.common.base.Preconditions.*;
 
@@ -132,7 +133,8 @@ public class PeerGroup implements TransactionBroadcaster {
     @GuardedBy("lock") private int maxConnections;
     // if true, we will listen to "addr" network messages and add nodes discovered this way.
     // if false, only nodes found by discovery process are used/added.
-    @GuardedBy("lock") private boolean networkPeerDiscovery = true;    
+    @GuardedBy("lock")
+    private boolean addPeersFromAddressMessage = true;    
     // Minimum protocol version we will allow ourselves to connect to: require Bloom filtering.
     private volatile int vMinRequiredProtocolVersion = FilteredBlock.MIN_PROTOCOL_VERSION;
 
@@ -157,7 +159,7 @@ public class PeerGroup implements TransactionBroadcaster {
         
         @Override
         public Message onPreMessageReceived(Peer peer, Message m) {
-            if(m instanceof AddressMessage && networkPeerDiscovery) {
+            if (m instanceof AddressMessage && addPeersFromAddressMessage) {
                 for( PeerAddress peerAddress : ((AddressMessage)m).getAddresses() ) {
                     addInactive(peerAddress);
                 }
@@ -461,10 +463,10 @@ public class PeerGroup implements TransactionBroadcaster {
      *   if true, we will listen to "addr" network messages and add nodes discovered this way.
      *   if false, only nodes found by discovery process are used/added.
      */
-    public void setNetworkPeerDiscovery(boolean networkPeerDiscovery) {
+    public void setAddPeersFromAddressMessage(boolean addPeersFromAddressMessage) {
         lock.lock();
         try {
-            this.networkPeerDiscovery = networkPeerDiscovery;
+            this.addPeersFromAddressMessage = addPeersFromAddressMessage;
         } finally {
             lock.unlock();
         }

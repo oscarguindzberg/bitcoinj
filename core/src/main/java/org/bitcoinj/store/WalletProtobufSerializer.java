@@ -17,6 +17,11 @@
 
 package org.bitcoinj.store;
 
+import com.google.common.collect.Lists;
+import com.google.protobuf.ByteString;
+import com.google.protobuf.CodedInputStream;
+import com.google.protobuf.TextFormat;
+import com.google.protobuf.WireFormat;
 import org.bitcoinj.core.*;
 import org.bitcoinj.core.TransactionConfidence.ConfidenceType;
 import org.bitcoinj.crypto.KeyCrypter;
@@ -26,17 +31,7 @@ import org.bitcoinj.signers.LocalTransactionSigner;
 import org.bitcoinj.signers.TransactionSigner;
 import org.bitcoinj.utils.ExchangeRate;
 import org.bitcoinj.utils.Fiat;
-import org.bitcoinj.wallet.DefaultKeyChainFactory;
-import org.bitcoinj.wallet.KeyChainFactory;
-import org.bitcoinj.wallet.KeyChainGroup;
-import org.bitcoinj.wallet.WalletTransaction;
-import com.google.common.collect.Lists;
-import com.google.protobuf.ByteString;
-import com.google.protobuf.CodedInputStream;
-import com.google.protobuf.TextFormat;
-import com.google.protobuf.WireFormat;
-
-import org.bitcoinj.wallet.Protos;
+import org.bitcoinj.wallet.*;
 import org.bitcoinj.wallet.Protos.Wallet.EncryptionType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,7 +43,10 @@ import java.io.OutputStream;
 import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.*;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -551,6 +549,7 @@ public class WalletProtobufSerializer {
 
     private void readTransaction(Protos.Transaction txProto, NetworkParameters params) throws UnreadableWalletException {
         Transaction tx = new Transaction(params);
+        tx.setVersion(txProto.getVersion());
         if (txProto.hasUpdatedAt()) {
             tx.setUpdateTime(new Date(txProto.getUpdatedAt()));
         }

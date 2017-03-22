@@ -135,6 +135,7 @@ public class Transaction extends ChildMessage implements Serializable {
     // can properly keep track of optimal encoded size
     private transient int optimalEncodingMessageSize;
 
+
     /**
      * This enum describes the underlying reason the transaction was created. It's useful for rendering wallet GUIs
      * more appropriately.
@@ -1092,6 +1093,11 @@ public class Transaction extends ChildMessage implements Serializable {
     public long getVersion() {
         maybeParse();
         return version;
+    }
+
+    public void setVersion(int version) {
+        this.version = version;
+        unCache();
     }
 
     /** Returns an unmodifiable view of all inputs. */

@@ -1338,6 +1338,8 @@ public class DeterministicKeyChain implements EncryptableKeyChain {
         }
         builder.append("Key to watch:  ").append(watchingKey.serializePubB58(params)).append('\n');
         formatAddresses(includePrivateKeys, params, builder);
+        for (ECKey key : getKeys(true))
+            key.formatKeyWithAddress(includePrivateKeys, builder, params);
         return builder.toString();
     }
 

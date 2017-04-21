@@ -166,6 +166,13 @@ public class PeerGroup implements TransactionBroadcaster {
     private final CopyOnWriteArrayList<Wallet> wallets;
     private final CopyOnWriteArrayList<PeerFilterProvider> peerFilterProviders;
 
+    // Give the client the option to disable HttpSeeds
+    private static boolean ignoreHttpSeeds;
+   
+    public static void setIgnoreHttpSeeds(boolean ignoreHttpSeeds) {
+        PeerGroup.ignoreHttpSeeds = ignoreHttpSeeds;
+    }
+
     // This event listener is added to every peer. It's here so when we announce transactions via an "inv", every
     // peer can fetch them.
     private final PeerListener peerListener = new PeerListener();
@@ -379,7 +386,7 @@ public class PeerGroup implements TransactionBroadcaster {
         if (doDiscovery) {
             NetworkParameters params = context.getParams();
             HttpDiscovery.Details[] httpSeeds = params.getHttpSeeds();
-            if (httpSeeds.length > 0) {
+            if (!ignoreHttpSeeds && httpSeeds.length > 0) {
                 // Use HTTP discovery when Tor is active and there is a Cartographer seed, for a much needed speed boost.
                 OkHttpClient httpClient = new OkHttpClient();
                 httpClient.setSocketFactory(torClient.getSocketFactory());

@@ -688,7 +688,7 @@ public class Transaction extends ChildMessage {
                 Script scriptSig = in.getScriptSig();
                 s.append(scriptSig);
                 if (in.getValue() != null)
-                    s.append(" ").append(in.getValue().toFriendlyString());
+                    s.append(" ").append(in.getValue().toFriendlyString()).append(" (").append(in.getValue()).append(")");
                 s.append("\n          ");
                 s.append("outpoint:");
                 final TransactionOutPoint outpoint = in.getOutpoint();
@@ -719,6 +719,13 @@ public class Transaction extends ChildMessage {
                 s.append(scriptPubKey);
                 s.append(" ");
                 s.append(out.getValue().toFriendlyString());
+                s.append(" (");
+                s.append(out.getValue());
+                s.append(") ScriptPubKey: ");
+                s.append(HEX.encode(scriptPubKey.getProgram()));
+                s.append(" Address:");
+                s.append(scriptPubKey.getToAddress(params));
+                s.append(" ");
                 if (!out.isAvailableForSpending()) {
                     s.append(" Spent");
                 }
@@ -734,8 +741,8 @@ public class Transaction extends ChildMessage {
         final Coin fee = getFee();
         if (fee != null) {
             final int size = unsafeBitcoinSerialize().length;
-            s.append("     fee  ").append(fee.multiply(1000).divide(size).toFriendlyString()).append("/kB, ")
-                    .append(fee.toFriendlyString()).append(" for ").append(size).append(" bytes\n");
+            s.append("     fee  ").append(fee.toFriendlyString()).append(" for ").append(size).append(" bytes (")
+                    .append(fee.divide(size).value).append(" Satoshi/Byte)\n");
         }
         if (purpose != null)
             s.append("     prps ").append(purpose).append('\n');

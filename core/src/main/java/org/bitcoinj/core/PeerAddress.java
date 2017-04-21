@@ -17,11 +17,11 @@
 
 package org.bitcoinj.core;
 
-import org.bitcoinj.params.MainNetParams;
+import com.google.common.base.Objects;
+import com.google.common.net.InetAddresses;
 import org.bitcoinj.net.AddressChecker;
 import org.bitcoinj.net.OnionCat;
-import com.google.common.net.InetAddresses;
-
+import org.bitcoinj.params.MainNetParams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,10 +32,9 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static org.bitcoinj.core.Utils.uint32ToByteStreamLE;
 import static org.bitcoinj.core.Utils.uint64ToByteStreamLE;
-import static com.google.common.base.Preconditions.checkNotNull;
-
 
 /**
  * <p>A PeerAddress holds an IP address and port number representing the network location of
@@ -45,9 +44,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  */
 public class PeerAddress extends ChildMessage {
     private static final Logger log = LoggerFactory.getLogger(PeerAddress.class);
-
-    private static final long serialVersionUID = 7501293709324197411L;
-
+    
     static final int MESSAGE_SIZE = 30;
 
     private InetAddress addr;
@@ -111,8 +108,18 @@ public class PeerAddress extends ChildMessage {
     }
 
     /**
+     * Constructs a peer address from the given IP address. Port is default for
+     * Bitcoin mainnet, version number is default for the given parameters.
+     */
+    public PeerAddress(NetworkParameters params, InetAddress addr) {
+        this(params, addr, MainNetParams.get().getPort());
+    }
+
+    /**
      * Constructs a peer address from an {@link InetSocketAddress}. An InetSocketAddress can take in as parameters an
      * InetAddress or a String hostname. If you want to connect to a .onion, set the hostname to the .onion address.
+     * Protocol version is the default.  Protocol version is the default
+     * for Bitcoin.
      */
     public PeerAddress(InetSocketAddress addr) {
         /* socks addresses, eg Tor, use hostname only because no local lookup is performed.
@@ -185,7 +192,7 @@ public class PeerAddress extends ChildMessage {
         AddressChecker addrChecker = new AddressChecker();
         byte[] ipBytes;
         if( addrChecker.IsOnionCatTor( addr ) ) {
-            ipBytes = OnionCat.onionHostToIPV6Bytes( hostname );
+            ipBytes = OnionCat.onionHostToIPV6Bytes(hostname);
         }
         else if( addr != null ) {
             // Java does not provide any utility to map an IPv4 address into IPv6 space, so we have to do it by hand.
@@ -196,6 +203,9 @@ public class PeerAddress extends ChildMessage {
                 v6addr[10] = (byte) 0xFF;
                 v6addr[11] = (byte) 0xFF;
                 ipBytes = v6addr;
+            }
+            else {
+                ipBytes = new byte[16];
             }
         }
         else {
@@ -233,6 +243,10 @@ public class PeerAddress extends ChildMessage {
         port = ((0xFF & payload[cursor++]) << 8) | (0xFF & payload[cursor++]);
         // The 4 byte difference is the uint32 timestamp that was introduced in version 31402 
         length = protocolVersion > 31402 ? MESSAGE_SIZE : MESSAGE_SIZE - 4;
+    }
+
+    public String getHostname() {
+        return hostname;
     }
 
     public InetAddress getAddr() {

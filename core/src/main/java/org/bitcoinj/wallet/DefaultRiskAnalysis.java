@@ -17,7 +17,8 @@
 
 package org.bitcoinj.wallet;
 
-import org.bitcoinj.core.*;
+import org.bitcoinj.core.Coin;
+import org.bitcoinj.core.ECKey;
 import org.bitcoinj.core.ECKey.ECDSASignature;
 import org.bitcoinj.core.NetworkParameters;
 import org.bitcoinj.core.Transaction;
@@ -30,6 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+
 import java.util.List;
 
 import static com.google.common.base.Preconditions.checkState;
@@ -44,8 +46,8 @@ public class DefaultRiskAnalysis implements RiskAnalysis {
 
     /**
      * Any standard output smaller than this value (in satoshis) will be considered risky, as it's most likely be
-     * rejected by the network. Currently it's 546 satoshis. This is different from {@link Transaction#MIN_NONDUST_OUTPUT}
-     * because of an upcoming fee change in Bitcoin Core 0.9.
+     * rejected by the network. This is usually the same as {@link Transaction#MIN_NONDUST_OUTPUT} but can be
+     * different when the fee is about to change in Bitcoin Core.
      */
     public static final Coin MIN_ANALYSIS_NONDUST_OUTPUT = Transaction.MIN_NONDUST_OUTPUT;
 

@@ -27,10 +27,10 @@ import org.bitcoinj.wallet.listeners.KeyChainEventListener;
 import org.slf4j.*;
 import org.spongycastle.crypto.params.*;
 
-import javax.annotation.Nullable;
-import java.security.SecureRandom;
+import javax.annotation.*;
+import java.security.*;
 import java.util.*;
-import java.util.concurrent.Executor;
+import java.util.concurrent.*;
 
 import static com.google.common.base.Preconditions.*;
 
@@ -267,8 +267,9 @@ public class KeyChainGroup implements KeyBag {
      */
     public void setLookaheadSize(int lookaheadSize) {
         this.lookaheadSize = lookaheadSize;
-        for (DeterministicKeyChain chain : chains) 
+        for (DeterministicKeyChain chain : chains) {
             chain.setLookaheadSize(lookaheadSize);
+        }
     }
 
     /**

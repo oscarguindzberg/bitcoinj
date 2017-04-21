@@ -3,7 +3,6 @@ package org.bitcoinj.net;
 import org.bitcoinj.utils.CIDRUtils;
 
 import java.net.InetAddress;
-import java.net.UnknownHostException;
 
 /**
  * Created by danda on 1/12/17.

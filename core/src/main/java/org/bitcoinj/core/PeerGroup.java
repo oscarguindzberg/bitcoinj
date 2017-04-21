@@ -17,14 +17,11 @@
 
 package org.bitcoinj.core;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Throwables;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.net.InetAddresses;
-import com.google.common.primitives.Ints;
+import com.google.common.annotations.*;
+import com.google.common.base.*;
+import com.google.common.collect.*;
+import com.google.common.net.*;
+import com.google.common.primitives.*;
 import com.google.common.util.concurrent.*;
 import com.squareup.okhttp.*;
 import com.subgraph.orchid.*;
@@ -42,12 +39,12 @@ import org.bitcoinj.wallet.listeners.ScriptsChangeEventListener;
 import org.bitcoinj.wallet.listeners.WalletCoinsReceivedEventListener;
 import org.slf4j.*;
 
-import javax.annotation.Nullable;
-import java.io.IOException;
+import javax.annotation.*;
+import java.io.*;
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.*;
 
 import static com.google.common.base.Preconditions.*;
 
@@ -623,7 +620,6 @@ public class PeerGroup implements TransactionBroadcaster {
                 // BitcoinJ gets too many connections after a connection loss and reconnect as it adds up a lot of 
                 // potential candidates and then try to connect to all of those when getting connection again.
                 // A check for maxConnections is required to not exceed connections.
-                // TODO: Review
                 if(pendingPeers.size() + peers.size() < maxConnections)
                     connectTo(addrToTry, false, vConnectTimeoutMillis);
             } finally {
@@ -1090,7 +1086,7 @@ public class PeerGroup implements TransactionBroadcaster {
             InetSocketAddress[] addresses;
             try {
                 addresses = peerDiscovery.getPeers(requiredServices, peerDiscoveryTimeoutMillis, TimeUnit.MILLISECONDS);
-            catch(PeerDiscoveryException e) {
+            }catch(PeerDiscoveryException e) {
                 log.warn(e.getMessage());
                 continue;
             }
@@ -1475,10 +1471,6 @@ public class PeerGroup implements TransactionBroadcaster {
         }
     }
 
-    public void setBloomFilterTweak(long bloomFilterTweak) {
-        bloomFilterMerger.setBloomFilterTweak(bloomFilterTweak);
-    }
-
     /**
      * Returns the number of currently connected peers. To be informed when this count changes, register a 
      * {@link org.bitcoinj.core.listeners.PeerConnectionEventListener} and use the onPeerConnected/onPeerDisconnected methods.
@@ -1835,7 +1827,8 @@ public class PeerGroup implements TransactionBroadcaster {
                     // When using BlockingClient we get errors at shutdown caused by 
                     // startBlockChainDownloadFromPeer()
                     // We add another check to terminate here if we have been shut down already
-                    if (!isRunning()) return;
+                    if (!isRunning()) 
+                        return;
                     
                     if (downloadListener != null) {
                         startBlockChainDownloadFromPeer(newDownloadPeer);

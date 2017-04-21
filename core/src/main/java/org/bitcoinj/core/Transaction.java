@@ -734,8 +734,8 @@ public class Transaction extends ChildMessage {
         final Coin fee = getFee();
         if (fee != null) {
             final int size = unsafeBitcoinSerialize().length;
-            s.append("     fee  ").append(fee.multiply(1000).divide(size).toFriendlyString()).append("/kB, ")
-                    .append(fee.toFriendlyString()).append(" for ").append(size).append(" bytes\n");
+            s.append("     fee  ").append(fee.toFriendlyString()).append(" for ").append(size).append(" bytes (")
+                    .append(fee.divide(size).value).append(" Satoshi/Byte)\n");
         }
         if (purpose != null)
             s.append("     prps ").append(purpose).append('\n');

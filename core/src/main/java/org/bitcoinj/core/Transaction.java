@@ -17,6 +17,9 @@
 
 package org.bitcoinj.core;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.primitives.Ints;
+import com.google.common.primitives.Longs;
 import org.bitcoinj.core.TransactionConfidence.ConfidenceType;
 import org.bitcoinj.crypto.TransactionSignature;
 import org.bitcoinj.script.Script;
@@ -146,6 +149,7 @@ public class Transaction extends ChildMessage {
     // of the size of the ideal encoding in addition to the actual message size (which Message needs) so that Blocks
     // can properly keep track of optimal encoded size
     private int optimalEncodingMessageSize;
+
 
     /**
      * This enum describes the underlying reason the transaction was created. It's useful for rendering wallet GUIs
@@ -681,7 +685,7 @@ public class Transaction extends ChildMessage {
                 Script scriptSig = in.getScriptSig();
                 s.append(scriptSig);
                 if (in.getValue() != null)
-                    s.append(" ").append(in.getValue().toFriendlyString());
+                    s.append(" ").append(in.getValue().toFriendlyString()).append(" (").append(in.getValue()).append(")");
                 s.append("\n          ");
                 s.append("outpoint:");
                 final TransactionOutPoint outpoint = in.getOutpoint();
@@ -709,9 +713,16 @@ public class Transaction extends ChildMessage {
             s.append("out  ");
             try {
                 Script scriptPubKey = out.getScriptPubKey();
-                s.append(scriptPubKey);
+                s.append(scriptPubKey.toString());
                 s.append(" ");
                 s.append(out.getValue().toFriendlyString());
+                s.append(" (");
+                s.append(out.getValue());
+                s.append(") ScriptPubKey: ");
+                s.append(HEX.encode(scriptPubKey.getProgram()));
+                s.append(" Address:");
+                s.append(scriptPubKey.getToAddress(params));
+                s.append(" ");
                 if (!out.isAvailableForSpending()) {
                     s.append(" Spent");
                 }
@@ -1096,6 +1107,11 @@ public class Transaction extends ChildMessage {
 
     public long getVersion() {
         return version;
+    }
+
+    public void setVersion(int version) {
+        this.version = version;
+        unCache();
     }
 
     public void setVersion(int version) {

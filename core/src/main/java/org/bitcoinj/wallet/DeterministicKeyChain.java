@@ -17,6 +17,10 @@
 
 package org.bitcoinj.wallet;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterators;
+import com.google.common.collect.PeekingIterator;
+import com.google.protobuf.ByteString;
 import org.bitcoinj.core.BloomFilter;
 import org.bitcoinj.core.ECKey;
 import org.bitcoinj.core.NetworkParameters;
@@ -1032,7 +1036,7 @@ public class DeterministicKeyChain implements EncryptableKeyChain {
     //
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-
+    
     @Override
     public int numBloomFilterEntries() {
         return numKeys() * 2;
@@ -1077,8 +1081,8 @@ public class DeterministicKeyChain implements EncryptableKeyChain {
     public void setLookaheadSize(int lookaheadSize) {
         lock.lock();
         try {
-            boolean readjustThreshold = this.lookaheadThreshold == calcDefaultLookaheadThreshold();
             this.lookaheadSize = lookaheadSize;
+            boolean readjustThreshold = this.lookaheadThreshold == calcDefaultLookaheadThreshold();
             if (readjustThreshold)
                 this.lookaheadThreshold = calcDefaultLookaheadThreshold();
         } finally {
@@ -1112,6 +1116,8 @@ public class DeterministicKeyChain implements EncryptableKeyChain {
         try {
             if (lookaheadThreshold >= lookaheadSize)
                 return 0;
+            else
+                lookaheadThreshold = calcDefaultLookaheadThreshold();
             return lookaheadThreshold;
         } finally {
             lock.unlock();
@@ -1314,6 +1320,11 @@ public class DeterministicKeyChain implements EncryptableKeyChain {
         throw new UnsupportedOperationException();
     }
 
+    public void printAllPubKeysAsHex(StringBuilder stringBuilder) {
+        for (ECKey key : getKeys(false))
+            stringBuilder.append('"').append(Utils.HEX.encode(key.getPubKey())).append('"').append(",\n");
+    }
+    
     public String toString(boolean includePrivateKeys, NetworkParameters params) {
         final DeterministicKey watchingKey = getWatchingKey();
         final StringBuilder builder = new StringBuilder();
@@ -1333,6 +1344,8 @@ public class DeterministicKeyChain implements EncryptableKeyChain {
         }
         builder.append("Key to watch:  ").append(watchingKey.serializePubB58(params)).append('\n');
         formatAddresses(includePrivateKeys, params, builder);
+        for (ECKey key : getKeys(true))
+            key.formatKeyWithAddress(includePrivateKeys, builder2, params);
         return builder.toString();
     }
 

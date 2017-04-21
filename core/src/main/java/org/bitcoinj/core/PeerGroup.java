@@ -17,11 +17,14 @@
 
 package org.bitcoinj.core;
 
-import com.google.common.annotations.*;
-import com.google.common.base.*;
-import com.google.common.collect.*;
-import com.google.common.net.*;
-import com.google.common.primitives.*;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.net.InetAddresses;
+import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.*;
 import com.squareup.okhttp.*;
 import com.subgraph.orchid.*;
@@ -39,12 +42,12 @@ import org.bitcoinj.wallet.listeners.ScriptsChangeEventListener;
 import org.bitcoinj.wallet.listeners.WalletCoinsReceivedEventListener;
 import org.slf4j.*;
 
-import javax.annotation.*;
-import java.io.*;
+import javax.annotation.Nullable;
+import java.io.IOException;
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.locks.*;
+import java.util.concurrent.locks.ReentrantLock;
 
 import static com.google.common.base.Preconditions.*;
 
@@ -148,6 +151,10 @@ public class PeerGroup implements TransactionBroadcaster {
     // How many connections we want to have open at the current time. If we lose connections, we'll try opening more
     // until we reach this count.
     @GuardedBy("lock") private int maxConnections;
+    // if true, we will listen to "addr" network messages and add nodes discovered this way.
+    // if false, only nodes found by discovery process are used/added.
+    @GuardedBy("lock")
+    private boolean addPeersFromAddressMessage = true;    
     // Minimum protocol version we will allow ourselves to connect to: require Bloom filtering.
     private volatile int vMinRequiredProtocolVersion;
 
@@ -250,7 +257,7 @@ public class PeerGroup implements TransactionBroadcaster {
         }
     }
 
-    private class PeerStartupListener implements PeerConnectedEventListener, PeerDisconnectedEventListener {
+    private class PeerStartupListener implements PeerConnectedEventListener, PeerDisconnectedEventListener, PreMessageReceivedEventListener {
         @Override
         public void onPeerConnected(Peer peer, int peerCount) {
             handleNewPeer(peer);
@@ -260,6 +267,18 @@ public class PeerGroup implements TransactionBroadcaster {
         public void onPeerDisconnected(Peer peer, int peerCount) {
             // The channel will be automatically removed from channels.
             handlePeerDeath(peer, null);
+        }
+
+        @Override
+        public Message onPreMessageReceived(Peer peer, Message m) {
+            if (m instanceof AddressMessage && addPeersFromAddressMessage) {
+                for( PeerAddress peerAddress : ((AddressMessage)m).getAddresses() ) {
+                    addInactive(peerAddress);
+                }
+            }
+
+            // Just pass the message right through for further processing.
+            return m;
         }
     }
 
@@ -488,6 +507,20 @@ public class PeerGroup implements TransactionBroadcaster {
     }
 
     /**
+     * Switch for enabling network peer discovery.
+     *   if true, we will listen to "addr" network messages and add nodes discovered this way.
+     *   if false, only nodes found by discovery process are used/added.
+     */
+    public void setAddPeersFromAddressMessage(boolean addPeersFromAddressMessage) {
+        lock.lock();
+        try {
+            this.addPeersFromAddressMessage = addPeersFromAddressMessage;
+        } finally {
+            lock.unlock();
+        }
+    }
+    
+    /**
      * Configure download of pending transaction dependencies. A change of values only takes effect for newly connected
      * peers.
      */
@@ -586,7 +619,13 @@ public class PeerGroup implements TransactionBroadcaster {
                     executor.schedule(this, delay, TimeUnit.MILLISECONDS);
                     return;
                 }
-                connectTo(addrToTry, false, vConnectTimeoutMillis);
+
+                // BitcoinJ gets too many connections after a connection loss and reconnect as it adds up a lot of 
+                // potential candidates and then try to connect to all of those when getting connection again.
+                // A check for maxConnections is required to not exceed connections.
+                // TODO: Review
+                if(pendingPeers.size() + peers.size() < maxConnections)
+                    connectTo(addrToTry, false, vConnectTimeoutMillis);
             } finally {
                 lock.unlock();
             }
@@ -979,22 +1018,25 @@ public class PeerGroup implements TransactionBroadcaster {
         int newMax;
         lock.lock();
         try {
-            addInactive(peerAddress);
-            newMax = getMaxConnections() + 1;
+            if( addInactive(peerAddress) ) {
+                newMax = getMaxConnections() + 1;
+                setMaxConnections(newMax);
+            }
         } finally {
             lock.unlock();
         }
-        setMaxConnections(newMax);
     }
 
-    private void addInactive(PeerAddress peerAddress) {
+    private boolean addInactive(PeerAddress peerAddress) {
         lock.lock();
         try {
             // Deduplicate
-            if (backoffMap.containsKey(peerAddress))
-                return;
+            if (backoffMap.containsKey(peerAddress)) {
+                return false;
+            }
             backoffMap.put(peerAddress, new ExponentialBackoff(peerBackoffParams));
             inactives.offer(peerAddress);
+            return true;
         } finally {
             lock.unlock();
         }
@@ -1046,7 +1088,13 @@ public class PeerGroup implements TransactionBroadcaster {
         final List<PeerAddress> addressList = Lists.newLinkedList();
         for (PeerDiscovery peerDiscovery : peerDiscoverers /* COW */) {
             InetSocketAddress[] addresses;
-            addresses = peerDiscovery.getPeers(requiredServices, peerDiscoveryTimeoutMillis, TimeUnit.MILLISECONDS);
+            try {
+                addresses = peerDiscovery.getPeers(requiredServices, peerDiscoveryTimeoutMillis, TimeUnit.MILLISECONDS);
+            catch(PeerDiscoveryException e) {
+                log.warn(e.getMessage());
+                continue;
+            }
+                
             for (InetSocketAddress address : addresses) addressList.add(new PeerAddress(params, address));
             if (addressList.size() >= maxPeersToDiscoverCount) break;
         }
@@ -1100,6 +1148,10 @@ public class PeerGroup implements TransactionBroadcaster {
                 socket = new Socket();
                 socket.connect(new InetSocketAddress(InetAddresses.forString("127.0.0.1"), params.getPort()), vConnectTimeoutMillis);
                 localhostCheckState = LocalhostCheckState.FOUND;
+                
+                // If we are connected to localhost we don't want to get other peers added from AddressMessage calls.
+                setAddPeersFromAddressMessage(false);
+               
                 return true;
             } catch (IOException e) {
                 log.info("Localhost peer not detected.");
@@ -1421,6 +1473,10 @@ public class PeerGroup implements TransactionBroadcaster {
         } finally {
             lock.unlock();
         }
+    }
+
+    public void setBloomFilterTweak(long bloomFilterTweak) {
+        bloomFilterMerger.setBloomFilterTweak(bloomFilterTweak);
     }
 
     /**
@@ -1775,6 +1831,12 @@ public class PeerGroup implements TransactionBroadcaster {
                 final Peer newDownloadPeer = selectDownloadPeer(peers);
                 if (newDownloadPeer != null) {
                     setDownloadPeer(newDownloadPeer);
+                    
+                    // When using BlockingClient we get errors at shutdown caused by 
+                    // startBlockChainDownloadFromPeer()
+                    // We add another check to terminate here if we have been shut down already
+                    if (!isRunning()) return;
+                    
                     if (downloadListener != null) {
                         startBlockChainDownloadFromPeer(newDownloadPeer);
                     }

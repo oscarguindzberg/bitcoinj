@@ -1,13 +1,13 @@
 /*
  * Copyright 2013 Google Inc.
  * Copyright 2014 Andreas Schildbach
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -59,28 +59,26 @@ import org.bitcoinj.core.VarInt;
 import org.bitcoinj.core.VerificationException;
 import org.bitcoinj.core.TransactionConfidence.*;
 import org.bitcoinj.crypto.*;
+import org.bitcoinj.params.*;
 import org.bitcoinj.script.*;
 import org.bitcoinj.signers.*;
+import org.bitcoinj.store.*;
 import org.bitcoinj.utils.*;
+import org.bitcoinj.wallet.*;
 import org.bitcoinj.wallet.Protos.Wallet.*;
 import org.bitcoinj.wallet.WalletTransaction.*;
-import org.bitcoinj.wallet.listeners.KeyChainEventListener;
-import org.bitcoinj.wallet.listeners.ScriptsChangeEventListener;
-import org.bitcoinj.wallet.listeners.WalletChangeEventListener;
-import org.bitcoinj.wallet.listeners.WalletCoinsReceivedEventListener;
-import org.bitcoinj.wallet.listeners.WalletCoinsSentEventListener;
-import org.bitcoinj.wallet.listeners.WalletEventListener;
-import org.bitcoinj.wallet.listeners.WalletReorganizeEventListener;
 import org.slf4j.*;
 import org.spongycastle.crypto.params.*;
 
-import javax.annotation.*;
+import javax.annotation.Nullable;
 import java.io.*;
 import java.math.BigInteger;
 import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
-import java.util.concurrent.locks.*;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantLock;
 
 import static com.google.common.base.Preconditions.*;
 
@@ -187,7 +185,8 @@ public class Wallet extends BaseTaggableObject
     protected final Context context;
     protected final NetworkParameters params;
 
-    @Nullable private Sha256Hash lastBlockSeenHash;
+    @Nullable
+    private Sha256Hash lastBlockSeenHash;
     private int lastBlockSeenHeight;
     private long lastBlockSeenTimeSecs;
 
@@ -244,10 +243,12 @@ public class Wallet extends BaseTaggableObject
     private final HashMap<String, WalletExtension> extensions;
 
     // Objects that perform transaction signing. Applied subsequently one after another
-    @GuardedBy("lock") private List<TransactionSigner> signers;
+    @GuardedBy("lock")
+    private List<TransactionSigner> signers;
 
     // If this is set then the wallet selects spendable candidate outputs from a UTXO provider.
-    @Nullable private volatile UTXOProvider vUTXOProvider;
+    @Nullable
+    protected volatile UTXOProvider vUTXOProvider;
 
     /**
      * Creates a new, empty wallet with a randomly chosen seed and no transactions. Make sure to provide for sufficient
@@ -816,7 +817,7 @@ public class Wallet extends BaseTaggableObject
     /**
      * Returns whether this wallet consists entirely of watching keys (unencrypted keys with no private part). Mixed
      * wallets are forbidden.
-     * 
+     *
      * @throws IllegalStateException
      *             if there are no keys, or if there is a mix between watching and non-watching keys.
      */
@@ -1279,6 +1280,7 @@ public class Wallet extends BaseTaggableObject
     //region Serialization support
 
     // TODO: Make this package private once the classes finish moving around.
+
     /** Internal use only. */
     public List<Protos.Key> serializeKeyChainGroupToProtobuf() {
         keyChainGroupLock.lock();
@@ -2869,20 +2871,20 @@ public class Wallet extends BaseTaggableObject
         checkState(lock.isHeldByCurrentThread());
         transactions.put(tx.getHash(), tx);
         switch (pool) {
-        case UNSPENT:
-            checkState(unspent.put(tx.getHash(), tx) == null);
-            break;
-        case SPENT:
-            checkState(spent.put(tx.getHash(), tx) == null);
-            break;
-        case PENDING:
-            checkState(pending.put(tx.getHash(), tx) == null);
-            break;
-        case DEAD:
-            checkState(dead.put(tx.getHash(), tx) == null);
-            break;
-        default:
-            throw new RuntimeException("Unknown wallet transaction type " + pool);
+            case UNSPENT:
+                checkState(unspent.put(tx.getHash(), tx) == null);
+                break;
+            case SPENT:
+                checkState(spent.put(tx.getHash(), tx) == null);
+                break;
+            case PENDING:
+                checkState(pending.put(tx.getHash(), tx) == null);
+                break;
+            case DEAD:
+                checkState(dead.put(tx.getHash(), tx) == null);
+                break;
+            default:
+                throw new RuntimeException("Unknown wallet transaction type " + pool);
         }
         if (pool == Pool.UNSPENT || pool == Pool.PENDING) {
             for (TransactionOutput output : tx.getOutputs()) {
@@ -3053,7 +3055,7 @@ public class Wallet extends BaseTaggableObject
         lock.lock();
         try {
             boolean dirty = false;
-            for (Iterator<Transaction> i = pending.values().iterator(); i.hasNext();) {
+            for (Iterator<Transaction> i = pending.values().iterator(); i.hasNext(); ) {
                 Transaction tx = i.next();
                 if (isTransactionRisky(tx, null) && !acceptRiskyTransactions) {
                     log.debug("Found risky transaction {} in wallet during cleanup.", tx.getHashAsString());
@@ -3169,6 +3171,9 @@ public class Wallet extends BaseTaggableObject
         return toString(false, true, true, null);
     }
 
+    public String printAllPubKeysAsHex() {
+        return keychain.printAllPubKeysAsHex();
+    }
 
     /**
      * Formats the wallet as a human readable piece of text. Intended for debugging, the format is not meant to be
@@ -3537,7 +3542,9 @@ public class Wallet extends BaseTaggableObject
         public Coin value;
         public BalanceType type;
     }
-    @GuardedBy("lock") private List<BalanceFutureRequest> balanceFutureRequests = Lists.newLinkedList();
+
+    @GuardedBy("lock")
+    private List<BalanceFutureRequest> balanceFutureRequests = Lists.newLinkedList();
 
     /**
      * <p>Returns a future that will complete when the balance of the given type has becom equal or larger to the given
@@ -3591,7 +3598,8 @@ public class Wallet extends BaseTaggableObject
             final Coin v = val;
             // Don't run any user-provided future listeners with our lock held.
             Threading.USER_THREAD.execute(new Runnable() {
-                @Override public void run() {
+                @Override
+                public void run() {
                     req.future.set(v);
                 }
             });
@@ -3907,6 +3915,9 @@ public class Wallet extends BaseTaggableObject
      */
     public static class ExceededMaxTransactionSize extends CompletionException {}
 
+    public static class ExceededMaxTransactionSize extends CompletionException {
+    }
+
     /**
      * Given a spend request containing an incomplete transaction, makes it valid by adding outputs and signed inputs
      * according to the instructions in the request. The transaction in the request is modified by this method.
@@ -4146,7 +4157,8 @@ public class Wallet extends BaseTaggableObject
             byte[] pubkey = script.getPubKey();
             ECKey key = findKeyFromPubKey(pubkey);
             return key != null && (key.isEncrypted() || key.hasPrivKey());
-        } if (script.isPayToScriptHash()) {
+        }
+        if (script.isPayToScriptHash()) {
             RedeemData data = findRedeemDataFromScriptHash(script.getPubKeyHash());
             return data != null && canSignFor(data.redeemScript);
         } else if (script.isSentToAddress()) {
@@ -4179,10 +4191,12 @@ public class Wallet extends BaseTaggableObject
      * Returns the spendable candidates from the {@link UTXOProvider} based on keys that the wallet contains.
      * @return The list of candidates.
      */
-    protected LinkedList<TransactionOutput> calculateAllSpendCandidatesFromUTXOProvider(boolean excludeImmatureCoinbases) {
+    protected List<TransactionOutput> calculateAllSpendCandidatesFromUTXOProvider(boolean excludeImmatureCoinbases) {
         checkState(lock.isHeldByCurrentThread());
         UTXOProvider utxoProvider = checkNotNull(vUTXOProvider, "No UTXO provider has been set");
-        LinkedList<TransactionOutput> candidates = Lists.newLinkedList();
+        // We might get duplicate outputs from the provider and from our pending tx outputs
+        // To avoid duplicate entries we use a set.
+        Set<TransactionOutput> candidates = new HashSet<TransactionOutput>();
         try {
             int chainHeight = utxoProvider.getChainHeadHeight();
             for (UTXO output : getStoredOutputsFromUTXOProvider()) {
@@ -4200,11 +4214,15 @@ public class Wallet extends BaseTaggableObject
         for (Transaction tx : pending.values()) {
             // Remove the spent outputs.
             for (TransactionInput input : tx.getInputs()) {
-                if (input.getConnectedOutput().isMine(this)) {
-                    candidates.remove(input.getConnectedOutput());
+                TransactionOutput connectedOutput = input.getConnectedOutput();
+                if (connectedOutput != null && connectedOutput.isMine(this)) {
+                    candidates.remove(connectedOutput);
                 }
             }
             // Add change outputs. Do not try and spend coinbases that were mined too recently, the protocol forbids it.
+
+            // We might get outputs from pending tx which we already got form the UTXP provider. 
+            // As we use a set it will not lead to duplicate entries.
             if (!excludeImmatureCoinbases || tx.isMature()) {
                 for (TransactionOutput output : tx.getOutputs()) {
                     if (output.isAvailableForSpending() && output.isMine(this)) {
@@ -4213,7 +4231,7 @@ public class Wallet extends BaseTaggableObject
                 }
             }
         }
-        return candidates;
+        return new ArrayList<TransactionOutput>(candidates);
     }
 
     /**
@@ -4273,7 +4291,8 @@ public class Wallet extends BaseTaggableObject
      * Get the {@link UTXOProvider}.
      * @return The UTXO provider.
      */
-    @Nullable public UTXOProvider getUTXOProvider() {
+    @Nullable
+    public UTXOProvider getUTXOProvider() {
         lock.lock();
         try {
             return vUTXOProvider;
@@ -4310,7 +4329,7 @@ public class Wallet extends BaseTaggableObject
      * required for spending without actually having all the linked data (i.e parent tx).
      *
      */
-    private class FreeStandingTransactionOutput extends TransactionOutput {
+    protected class FreeStandingTransactionOutput extends TransactionOutput {
         private UTXO output;
         private int chainHeight;
 
@@ -4351,6 +4370,16 @@ public class Wallet extends BaseTaggableObject
         @Override
         public Sha256Hash getParentTransactionHash() {
             return output.getHash();
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            return super.equals(o);
+        }
+
+        @Override
+        public int hashCode() {
+            return super.hashCode();
         }
     }
 
@@ -4646,10 +4675,10 @@ public class Wallet extends BaseTaggableObject
      * <p>Gets a bloom filter that contains all of the public keys from this wallet, and which will provide the given
      * false-positive rate if it has size elements. Keep in mind that you will get 2 elements in the bloom filter for
      * each key in the wallet, for the public key and the hash of the public key (address form).</p>
-     * 
+     *
      * <p>This is used to generate a BloomFilter which can be {@link BloomFilter#merge(BloomFilter)}d with another.
      * It could also be used if you have a specific target for the filter's size.</p>
-     * 
+     *
      * <p>See the docs for {@link BloomFilter(int, double)} for a brief explanation of anonymity when using bloom
      * filters.</p>
      */

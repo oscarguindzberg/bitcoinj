@@ -27,10 +27,10 @@ import org.bitcoinj.wallet.listeners.KeyChainEventListener;
 import org.slf4j.*;
 import org.spongycastle.crypto.params.*;
 
-import javax.annotation.*;
-import java.security.*;
+import javax.annotation.Nullable;
+import java.security.SecureRandom;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.Executor;
 
 import static com.google.common.base.Preconditions.*;
 
@@ -82,6 +82,13 @@ public class KeyChainGroup implements KeyBag {
     /** Creates a keychain group with no basic chain, and an HD chain initialized from the given seed. */
     public KeyChainGroup(NetworkParameters params, DeterministicSeed seed) {
         this(params, null, ImmutableList.of(new DeterministicKeyChain(seed)), null, null);
+    }
+
+    /**
+     * Creates a keychain group with the given chain.
+     */
+    public KeyChainGroup(NetworkParameters params, DeterministicKeyChain chain) {
+        this(params, null, ImmutableList.of(chain), null, null);
     }
 
     /**
@@ -260,9 +267,8 @@ public class KeyChainGroup implements KeyBag {
      */
     public void setLookaheadSize(int lookaheadSize) {
         this.lookaheadSize = lookaheadSize;
-        for (DeterministicKeyChain chain : chains) {
+        for (DeterministicKeyChain chain : chains) 
             chain.setLookaheadSize(lookaheadSize);
-        }
     }
 
     /**
@@ -786,6 +792,19 @@ public class KeyChainGroup implements KeyBag {
         }
     }
 
+    public String printAllPubKeysAsHex() {
+        StringBuilder stringBuilder = new StringBuilder();
+        if (basic != null) {
+            List<ECKey> keys = basic.getKeys();
+            Collections.sort(keys, ECKey.AGE_COMPARATOR);
+            for (ECKey key : keys)
+                stringBuilder.append('"').append(Utils.HEX.encode(key.getPubKey())).append('"').append(",\n");
+        }
+        for (DeterministicKeyChain chain : chains)
+            chain.printAllPubKeysAsHex(stringBuilder);
+        return stringBuilder.toString();
+    }
+    
     public String toString(boolean includePrivateKeys) {
         final StringBuilder builder = new StringBuilder();
         if (basic != null) {

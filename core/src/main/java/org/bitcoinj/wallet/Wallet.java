@@ -371,6 +371,13 @@ public class Wallet extends BaseTaggableObject
     }
 
     /**
+     * Gets the active keychain via {@link KeyChainGroup#getActiveKeyChain()}
+     */
+    public DeterministicKeyChain getActiveKeychain() {
+        return keyChainGroup.getActiveKeyChain();
+    }
+    
+    /**
      * <p>Adds given transaction signer to the list of signers. It will be added to the end of the signers list, so if
      * this wallet already has some signers added, given signer will be executed after all of them.</p>
      * <p>Transaction signer should be fully initialized before adding to the wallet, otherwise {@link IllegalStateException}

@@ -17,7 +17,6 @@
 
 package org.bitcoinj.core;
 
-import com.google.common.base.Objects;
 import com.google.common.net.InetAddresses;
 import org.bitcoinj.net.AddressChecker;
 import org.bitcoinj.net.OnionCat;
@@ -304,16 +303,27 @@ public class PeerAddress extends ChildMessage {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        PeerAddress other = (PeerAddress) o;
-        return other.addr.equals(addr) && other.port == port && other.time == time && other.services.equals(services);
-        //TODO: including services and time could cause same peer to be added multiple times in collections
+
+        PeerAddress that = (PeerAddress) o;
+
+        if (port != that.port) return false;
+        if (time != that.time) return false;
+        if (addr != null ? !addr.equals(that.addr) : that.addr != null) return false;
+        if (hostname != null ? !hostname.equals(that.hostname) : that.hostname != null) return false;
+        return !(services != null ? !services.equals(that.services) : that.services != null);
+
     }
 
     @Override
     public int hashCode() {
-        return Objects.hashCode(addr, port, time, services);
+        int result = addr != null ? addr.hashCode() : 0;
+        result = 31 * result + (hostname != null ? hostname.hashCode() : 0);
+        result = 31 * result + port;
+        result = 31 * result + (services != null ? services.hashCode() : 0);
+        result = 31 * result + (int) (time ^ (time >>> 32));
+        return result;
     }
-    
+
     public InetSocketAddress toSocketAddress() {
         // Reconstruct the InetSocketAddress properly
         if (hostname != null) {

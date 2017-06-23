@@ -128,7 +128,7 @@ public abstract class AbstractBitcoinNetParams extends NetworkParameters {
 
     @Override
     public MonetaryFormat getMonetaryFormat() {
-        return new MonetaryFormat();
+        return MonetaryFormat.BTC;
     }
 
     @Override

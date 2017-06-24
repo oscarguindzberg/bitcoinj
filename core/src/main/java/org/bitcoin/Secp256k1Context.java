@@ -38,7 +38,7 @@ public class Secp256k1Context {
             System.loadLibrary("secp256k1");
             contextRef = secp256k1_init_context();
         } catch (UnsatisfiedLinkError e) {
-            log.info(e.toString());
+            log.debug(e.toString());
             isEnabled = false;
         } catch (AccessControlException e) {
             log.debug(e.toString());

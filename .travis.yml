@@ -1,5 +1,6 @@
 language: java
 jdk: oraclejdk8
+
 script:
   - mvn -q clean install -Pno-network
   - jdk_switcher use openjdk6
@@ -9,6 +10,8 @@ script:
   - mvn -q clean package -Pno-network
 
 notifications:
-  irc:
-    channels: "irc.freenode.net#bitcoinj"
-    skip_join: true
+  slack:
+    rooms:
+      - secure: CxcBut3SK6AY9ORva8C00BJYHc53oD5Ag750ChvnapK/M2ZPgYipifXiiRx8/GXdfif95JHSqz7wPC9D5viFtcZV3OxQj6VIAoSCtLii7zjQNHD8EITTpjoHrc4Vwc73M3BbyF21B9Y49Lgm7UIbcHB2dWiaaCZIFTp+PEvg8Z0D/sJynB9w6Za3SYwEUrwK5nvjmfwVGivO8AeMSfkSRuBKwxL5QeCaLtUMO0pB2cGcXJrsJbquW7Hf5F7BX9yD6WD6GPDPARmRPN80KKKt4RavB68Ekg/HB6tvJOy689yu9zPPBWKD3KyuPn139L1ZkTYmja5zl6wxcB3zmDfFzJjDBkuUPFRrv6wFWCvSm+eY8Nvx30DQZ3Mnbm3vf9pmn4z6g7PY0kBGW5VRLChI2hsO7XE5dPlA4eHgHaBgQahJx6lMhA0ssee7BeFg+yQuzRqnm6i+TEDQn2BZJgkbKCyz9CTt7fkRCzACYCMZcOgjVJMzVlO4+frIiMunk6PS26d/2kTCuGvtHAu79O0b16EkEpAFtvutIcpaPr0tZ4tWSawEiWfSyexlNHJh6IzadcaCVfqDlgQFs5kh2bkASIwTOUJ4FfjHh3eSa1f5REc6lOIlezfcxIAGH4ElgejRGMoJ0vKCdFBKlKk2so9OInJQDMhNMmE01SsZEtWyIUs=
+    on_success: change
+    on_failure: always

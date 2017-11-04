@@ -97,7 +97,7 @@ public class MainNetParams extends AbstractBitcoinNetParams {
         //  $ ./names2ips.php --hostnames=seed.bitcoin.sipa.be,dnsseed.bluematt.me,dnsseed.bitcoin.dashjr.org,seed.bitcoinstats.com,seed.bitnodes.io --format=code --ipformat=hex --endian=big
 
         // TODO better would be that use same as deliver to Bitcoin Core: https://github.com/bitcoin/bitcoin/tree/master/contrib/seeds
-        // Prefer to not use the list from BitoinJ (https://github.com/bitcoin/bitcoin/tree/master/contrib/seeds)
+        // Prefer to not use the list from BitoinJ
 
         // Updated Nov. 4th 2017
         addrSeeds = new int[]{

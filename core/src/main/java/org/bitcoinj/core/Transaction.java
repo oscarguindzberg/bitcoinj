@@ -323,7 +323,14 @@ public class Transaction extends ChildMessage {
      */
     public void setBlockAppearance(StoredBlock block, boolean bestChain, int relativityOffset) {
         long blockTime = block.getHeader().getTimeSeconds() * 1000;
-        if (bestChain && (updatedAt == null || updatedAt.getTime() == 0 || updatedAt.getTime() > blockTime)) {
+
+        /* if (bestChain && (updatedAt == null || updatedAt.getTime() == 0 || updatedAt.getTime() > blockTime)) {
+            updatedAt = new Date(blockTime);
+        }*/
+        // We removed for the checks to not overwrite updatedAt in cases for re-orgs.
+        // updatedAt is set by wallet.commit and thus the new block would never set the value.
+        // If there is a re-org the best block is called last as stated in the doc above so the values will be correct.
+        if (bestChain) {
             updatedAt = new Date(blockTime);
         }
 

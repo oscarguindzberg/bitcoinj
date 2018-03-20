@@ -368,8 +368,11 @@ public class TransactionConfidence {
      *
      * @return the new depth
      */
-    public synchronized int incrementDepthInBlocks() {
-        return ++this.depth;
+    public synchronized int incrementDepthInBlocks(int height) {
+        if (getAppearedAtChainHeight() != -1)
+            this.depth = height - getAppearedAtChainHeight() + 1;
+
+        return this.depth;
     }
 
     /**

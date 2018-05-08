@@ -25,10 +25,13 @@ import org.bitcoinj.testing.*;
 import org.easymock.*;
 import org.junit.*;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import java.math.BigInteger;
 import java.util.*;
 import static org.bitcoinj.core.Utils.HEX;
 
+import static org.bitcoinj.core.Utils.uint32ToByteStreamLE;
 import static org.easymock.EasyMock.*;
 import static org.junit.Assert.*;
 
@@ -402,6 +405,68 @@ public class TransactionTest {
                     assertEquals(txNormalizedHash, tx.hashForSignature(0, new byte[0], Transaction.SigHash.ALL.byteValue()).toString());
                 }
             };
+        }
+    }
+
+    @Test
+    public void parseTransactionWithHugeDeclaredInputsSize() throws Exception {
+        Transaction tx = new HugeDeclaredSizeTransaction(PARAMS, true, false);
+        byte[] serializedTx = tx.bitcoinSerialize();
+        try {
+            new Transaction(PARAMS, serializedTx);
+            fail("We expect ProtocolException with the fixed code and OutOfMemoryError with the buggy code, so this is weird");
+        } catch (ProtocolException e) {
+            //Expected, do nothing
+        }
+    }
+
+    @Test
+    public void parseTransactionWithHugeDeclaredOutputsSize() throws Exception {
+        Transaction tx = new HugeDeclaredSizeTransaction(PARAMS, false, true);
+        byte[] serializedTx = tx.bitcoinSerialize();
+        try {
+            new Transaction(PARAMS, serializedTx);
+            fail("We expect ProtocolException with the fixed code and OutOfMemoryError with the buggy code, so this is weird");
+        } catch (ProtocolException e) {
+            //Expected, do nothing
+        }
+    }
+
+    private static class HugeDeclaredSizeTransaction extends Transaction {
+
+        private boolean hackInputsSize;
+        private boolean hackOutputsSize;
+
+        public HugeDeclaredSizeTransaction(NetworkParameters params, boolean hackInputsSize, boolean hackOutputsSize) {
+            super(params);
+            this.protocolVersion = NetworkParameters.ProtocolVersion.CURRENT.getBitcoinProtocolVersion();
+            Transaction inputTx = new Transaction(params);
+            inputTx.addOutput(Coin.FIFTY_COINS, ECKey.fromPrivate(BigInteger.valueOf(123456)).toAddress(params));
+            this.addInput(inputTx.getOutput(0));
+            this.getInput(0).disconnect();
+            Address to = ECKey.fromPrivate(BigInteger.valueOf(1000)).toAddress(params);
+            this.addOutput(Coin.COIN, to);
+
+            this.hackInputsSize = hackInputsSize;
+            this.hackOutputsSize = hackOutputsSize;
+        }
+
+        @Override
+        protected void bitcoinSerializeToStream(OutputStream stream) throws IOException {
+            // version
+            uint32ToByteStreamLE(getVersion(), stream);
+            // txin_count, txins
+            long inputsSize = hackInputsSize ? Integer.MAX_VALUE : getInputs().size();
+            stream.write(new VarInt(inputsSize).encode());
+            for (TransactionInput in : getInputs())
+                in.bitcoinSerialize(stream);
+            // txout_count, txouts
+            long outputsSize = hackOutputsSize ? Integer.MAX_VALUE : getOutputs().size();
+            stream.write(new VarInt(outputsSize).encode());
+            for (TransactionOutput out : getOutputs())
+                out.bitcoinSerialize(stream);
+            // lock_time
+            uint32ToByteStreamLE(getLockTime(), stream);
         }
     }
 }

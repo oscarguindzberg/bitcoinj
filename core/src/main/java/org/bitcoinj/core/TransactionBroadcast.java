@@ -48,12 +48,6 @@ public class TransactionBroadcast {
     private int minConnections;
     private int numWaitingFor;
 
-    private boolean broadcastToAllPeers;
-
-    public void setBroadcastToAllPeers(boolean broadcastToAllPeers) {
-        this.broadcastToAllPeers = broadcastToAllPeers;
-    }
-
     /** Used for shuffling the peers before broadcast: unit tests can replace this to make themselves deterministic. */
     @VisibleForTesting
     public static Random random = new Random();
@@ -149,26 +143,10 @@ public class TransactionBroadcast {
             // our version message, as SPV nodes cannot relay it doesn't give away any additional information
             // to skip the inv here - we wouldn't send invs anyway.
             int numConnected = peers.size();
-
-            // We add the option ot broadcast to all peer but don't change the algorithm for how many nodes we want to hear back
-
-            // If the broadcastToAllPeers flag is true and we would use all peers for broadcasting for some unknown
-            // reason we don not hear back from the broadcast or hear back very late (mostly > 1 minute). If we
-            // do not use all peers but at least 1 less it works reliable fast (about 3 seconds).
-            // It is not clear why that happens but is likely related to some behaviour in other classes for handling
-            // the events to hear back from the nodes.
-            int numToBroadcastTo;
-            if(broadcastToAllPeers){
-                numToBroadcastTo = Math.max(1, numConnected - 1);
-            }else{
-                numToBroadcastTo = (int) Math.max(1, Math.round(Math.ceil(numConnected / 2.0)));
-                peers = peers.subList(0, numToBroadcastTo);
-            }
-
-            numWaitingFor = Math.max(1, (int) Math.floor(numConnected/ 4.0));
+            int numToBroadcastTo = (int) Math.max(1, Math.round(Math.ceil(peers.size() / 2.0)));
+            numWaitingFor = (int) Math.ceil((peers.size() - numToBroadcastTo) / 2.0);
             Collections.shuffle(peers, random);
-
-
+            peers = peers.subList(0, numToBroadcastTo);
             log.info("broadcastTransaction: We have {} peers, adding {} to the memory pool", numConnected, tx.getHashAsString());
             log.info("Sending to {} peers, will wait for {}, sending to: {}", numToBroadcastTo, numWaitingFor, Joiner.on(",").join(peers));
             for (Peer peer : peers) {

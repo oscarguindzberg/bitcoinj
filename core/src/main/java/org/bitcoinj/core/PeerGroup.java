@@ -2201,12 +2201,6 @@ public class PeerGroup implements TransactionBroadcaster {
         return broadcastTransaction(tx, Math.max(1, getMinBroadcastConnections()));
     }
 
-    private boolean broadcastToAllPeers;
-
-    public void setBroadcastToAllPeers(boolean broadcastToAllPeers) {
-        this.broadcastToAllPeers = broadcastToAllPeers;
-    }
-
     /**
      * <p>Given a transaction, sends it un-announced to one peer and then waits for it to be received back from other
      * peers. Once all connected peers have announced the transaction, the future available via the
@@ -2234,7 +2228,6 @@ public class PeerGroup implements TransactionBroadcaster {
         }
         final TransactionBroadcast broadcast = new TransactionBroadcast(this, tx);
         broadcast.setMinConnections(minConnections);
-        broadcast.setBroadcastToAllPeers(broadcastToAllPeers);
 
         // Send the TX to the wallet once we have a successful broadcast.
         Futures.addCallback(broadcast.future(), new FutureCallback<Transaction>() {

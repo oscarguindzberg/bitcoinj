@@ -153,7 +153,7 @@ public class TransactionBroadcast {
             // We add the option ot broadcast to all peer but don't change the algorithm for how many nodes we want to hear back
            // broadcastToAllPeers = false;
            // int numToBroadcastTo = broadcastToAllPeers ? peers.size() : (int) Math.max(1, Math.round(Math.ceil(peers.size() / 2.0)));
-            int numToBroadcastTo =  peers.size()-1;
+            int numToBroadcastTo =  peers.size() - 1;
             //if(!broadcastToAllPeers)
             peers = peers.subList(0, numToBroadcastTo);
 

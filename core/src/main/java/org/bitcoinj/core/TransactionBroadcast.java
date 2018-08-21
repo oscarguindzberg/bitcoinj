@@ -151,13 +151,21 @@ public class TransactionBroadcast {
             int numConnected = peers.size();
 
             // We add the option ot broadcast to all peer but don't change the algorithm for how many nodes we want to hear back
-           // broadcastToAllPeers = false;
-           // int numToBroadcastTo = broadcastToAllPeers ? peers.size() : (int) Math.max(1, Math.round(Math.ceil(peers.size() / 2.0)));
-            int numToBroadcastTo =  peers.size() - 1;
-            //if(!broadcastToAllPeers)
-            peers = peers.subList(0, numToBroadcastTo);
 
-            numWaitingFor = Math.max(1, (int) Math.floor(peers.size() / 4.0));
+            // If the broadcastToAllPeers flag is true and we would use all peers for broadcasting for some unknown
+            // reason we don not hear back from the broadcast or hear back very late (mostly > 1 minute). If we
+            // do not use all peers but at least 1 less it works reliable fast (about 3 seconds).
+            // It is not clear why that happens but is likely related to some behaviour in other classes for handling
+            // the events to hear back from the nodes.
+            int numToBroadcastTo;
+            if(broadcastToAllPeers){
+                numToBroadcastTo = Math.max(1, numConnected - 1);
+            }else{
+                numToBroadcastTo = (int) Math.max(1, Math.round(Math.ceil(numConnected / 2.0)));
+                peers = peers.subList(0, numToBroadcastTo);
+            }
+
+            numWaitingFor = Math.max(1, (int) Math.floor(numConnected/ 4.0));
             Collections.shuffle(peers, random);
 
 

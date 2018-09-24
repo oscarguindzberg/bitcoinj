@@ -619,7 +619,9 @@ public class PeerGroup implements TransactionBroadcaster {
                 if (retryTime > now) {
                     long delay = retryTime - now;
                     log.info("Waiting {} msec before next connect attempt {}", delay, addrToTry == null ? "" : "to " + addrToTry);
-                    inactives.add(addrToTry);
+
+                    if (!isAlreadyAdded(addrToTry))
+                        inactives.add(addrToTry);
                     executor.schedule(this, delay, TimeUnit.MILLISECONDS);
                     return;
                 }
@@ -632,6 +634,17 @@ public class PeerGroup implements TransactionBroadcaster {
             }
         }
     };
+
+    private boolean isAlreadyAdded(PeerAddress peerAddress) {
+        boolean isAlreadyAdded = false;
+        for (PeerAddress a : inactives) {
+            if (a.getHostname() != null && a.getHostname().equals(peerAddress.getHostname())) {
+                isAlreadyAdded = true;
+                break;
+            }
+        }
+        return isAlreadyAdded;
+    }
 
     private void triggerConnections() {
         // Run on a background thread due to the need to potentially retry and back off in the background.
@@ -1033,7 +1046,10 @@ public class PeerGroup implements TransactionBroadcaster {
                 return false;
             }
             backoffMap.put(peerAddress, new ExponentialBackoff(peerBackoffParams));
-            inactives.offer(peerAddress);
+
+            if (!isAlreadyAdded(peerAddress))
+                inactives.offer(peerAddress);
+
             return true;
         } finally {
             lock.unlock();

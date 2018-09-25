@@ -643,7 +643,7 @@ public class PeerGroup implements TransactionBroadcaster {
     private boolean isAlreadyAdded(PeerAddress peerAddress) {
         boolean isAlreadyAdded = false;
         for (PeerAddress a : inactives) {
-            if (a.getHostname().equals(peerAddress.getHostname())) {
+            if (a.getHostname() != null && a.getHostname().equals(peerAddress.getHostname())) {
                 isAlreadyAdded = true;
                 break;
             }

@@ -646,7 +646,7 @@ public class Peer extends PeerSocketHandler {
                 if(!m.getStatusBar().contains("Alert key compromised, upgrade required"))
                     log.info("Received alert from peer {}: {}", this, m.getStatusBar());
             } else {
-                log.warn("Received alert with invalid signature from peer {}: {}", this, m.getStatusBar());
+                log.debug("Received alert with invalid signature from peer {}: {}", this, m.getStatusBar());
             }
         } catch (Throwable t) {
             // Signature checking can FAIL on Android platforms before Gingerbread apparently due to bugs in their

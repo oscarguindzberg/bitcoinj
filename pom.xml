@@ -214,6 +214,16 @@
     </profile>
 
       <profile>
+          <id>use-strong-cipher-jdk9</id>
+          <activation>
+              <jdk>[1.9,)</jdk>
+          </activation>
+          <properties>
+                  <crypto.policy>unlimited</crypto.policy>
+          </properties>
+      </profile>
+
+      <profile>
           <id>release</id>
           <build>
               <plugins>

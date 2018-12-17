@@ -76,7 +76,6 @@ public class MainNetParams extends AbstractBitcoinNetParams {
                 "dnsseed.bitcoin.dashjr.org",   // Luke Dashjr
                 "seed.bitcoinstats.com",        // Chris Decker
                 "seed.bitnodes.io",             // Addy Yeow
-                "bitseed.xf2.org",              // Jeff Garzik
                 "seed.bitcoin.jonasschnelli.ch" // Jonas Schnelli
         };
         httpSeeds = new HttpDiscovery.Details[] {

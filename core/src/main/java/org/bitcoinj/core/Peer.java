@@ -643,7 +643,8 @@ public class Peer extends PeerSocketHandler {
     protected void processAlert(AlertMessage m) {
         try {
             if (m.isSignatureValid()) {
-                log.info("Received alert from peer {}: {}", this, m.getStatusBar());
+                if(!m.getStatusBar().contains("Alert key compromised, upgrade required"))
+                    log.info("Received alert from peer {}: {}", this, m.getStatusBar());
             } else {
                 log.warn("Received alert with invalid signature from peer {}: {}", this, m.getStatusBar());
             }

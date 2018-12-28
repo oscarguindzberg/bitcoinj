@@ -18,6 +18,7 @@
 package org.bitcoinj.store;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 
@@ -115,4 +116,12 @@ public class SPVBlockStoreTest {
         store.close();
         store = new SPVBlockStore(UNITTEST, blockStoreFile, 10, true);
     }
+
+    @Test
+    public void oneStoreDelete() throws Exception {
+        SPVBlockStore store = new SPVBlockStore(UNITTEST, blockStoreFile);
+        store.close();
+        assertTrue (blockStoreFile.delete());
+    }
+
 }

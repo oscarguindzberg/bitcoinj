@@ -18,6 +18,7 @@
 package org.bitcoinj.store;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 
@@ -76,5 +77,14 @@ public class SPVBlockStoreTest {
         SPVBlockStore store = new SPVBlockStore(UNITTEST, blockStoreFile);
         store.close();
         store = new SPVBlockStore(UNITTEST, blockStoreFile);
+    }
+
+    @Test
+    public void oneStoreDelete() throws Exception {
+        // Used to fail on windows
+        // See https://github.com/bitcoinj/bitcoinj/issues/1477#issuecomment-450274821
+        SPVBlockStore store = new SPVBlockStore(UNITTEST, blockStoreFile);
+        store.close();
+        assertTrue (blockStoreFile.delete());
     }
 }

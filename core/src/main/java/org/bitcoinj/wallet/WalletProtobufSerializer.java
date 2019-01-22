@@ -240,6 +240,10 @@ public class WalletProtobufSerializer {
             txBuilder.setUpdatedAt(tx.getUpdateTime().getTime());
         }
 
+        if (tx.getIncludedInBestChainAt() != null) {
+            txBuilder.setIncludedInBestChainAt(tx.getIncludedInBestChainAt().getTime());
+        }
+
         if (tx.getLockTime() > 0) {
             txBuilder.setLockTime((int)tx.getLockTime());
         }
@@ -605,6 +609,10 @@ public class WalletProtobufSerializer {
 
         if (txProto.hasUpdatedAt()) {
             tx.setUpdateTime(new Date(txProto.getUpdatedAt()));
+        }
+
+        if (txProto.hasIncludedInBestChainAt()) {
+            tx.setIncludedInBestChainAt(new Date(txProto.getIncludedInBestChainAt()));
         }
 
         for (Protos.TransactionOutput outputProto : txProto.getTransactionOutputList()) {

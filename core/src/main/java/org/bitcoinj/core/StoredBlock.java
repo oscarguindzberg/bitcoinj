@@ -20,6 +20,8 @@ import org.bitcoinj.store.BlockStore;
 import org.bitcoinj.store.BlockStoreException;
 import com.google.common.base.Objects;
 
+import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.Locale;
@@ -139,6 +141,33 @@ public class StoredBlock {
         int height = buffer.getInt();  // +4 bytes
         byte[] header = new byte[Block.HEADER_SIZE + 1];    // Extra byte for the 00 transactions length.
         buffer.get(header, 0, Block.HEADER_SIZE);
+        return new StoredBlock(params.getDefaultSerializer().makeBlock(header), chainWork, height);
+    }
+
+    /** Serializes the stored block to a custom packed format. Used by {@link org.bitcoinj.store.SPVBlockStore}. */
+    public void serializeCompact(RandomAccessFile randomAccessFile) throws IOException {
+        byte[] chainWorkBytes = getChainWork().toByteArray();
+        checkState(chainWorkBytes.length <= CHAIN_WORK_BYTES, "Ran out of space to store chain work!");
+        if (chainWorkBytes.length < CHAIN_WORK_BYTES) {
+            // Pad to the right size.
+            randomAccessFile.write(EMPTY_BYTES, 0, CHAIN_WORK_BYTES - chainWorkBytes.length);
+        }
+        randomAccessFile.write(chainWorkBytes);
+        randomAccessFile.writeInt(getHeight());
+        // Using unsafeBitcoinSerialize here can give us direct access to the same bytes we read off the wire,
+        // avoiding serialization round-trips.
+        byte[] bytes = getHeader().unsafeBitcoinSerialize();
+        randomAccessFile.write(bytes, 0, Block.HEADER_SIZE);  // Trim the trailing 00 byte (zero transactions).
+    }
+
+    /** De-serializes the stored block from a custom packed format. Used by {@link org.bitcoinj.store.SPVBlockStore}. */
+    public static StoredBlock deserializeCompact(NetworkParameters params, RandomAccessFile randomAccessFile) throws ProtocolException, IOException {
+        byte[] chainWorkBytes = new byte[StoredBlock.CHAIN_WORK_BYTES];
+        randomAccessFile.read(chainWorkBytes);
+        BigInteger chainWork = new BigInteger(1, chainWorkBytes);
+        int height = randomAccessFile.readInt();  // +4 bytes
+        byte[] header = new byte[Block.HEADER_SIZE + 1];    // Extra byte for the 00 transactions length.
+        randomAccessFile.read(header, 0, Block.HEADER_SIZE);
         return new StoredBlock(params.getDefaultSerializer().makeBlock(header), chainWork, height);
     }
 

@@ -155,7 +155,11 @@ public class SPVBlockStore implements BlockStore {
             Sha256Hash hash = block.getHeader().getHash();
             notFoundCache.remove(hash);
             randomAccessFile.write(hash.getBytes());
-            block.serializeCompact(randomAccessFile);
+            ByteBuffer buffer = ByteBuffer.allocate(StoredBlock.COMPACT_SERIALIZED_SIZE);
+            block.serializeCompact(buffer);
+            buffer.flip();
+            FileChannel channel = randomAccessFile.getChannel();
+            channel.write(buffer);
             setRingCursor(randomAccessFile, (int) randomAccessFile.getFilePointer());
             blockCache.put(hash, block);
         } catch (IOException ioException) {
@@ -197,7 +201,11 @@ public class SPVBlockStore implements BlockStore {
                 randomAccessFile.read(scratch);
                 if (Arrays.equals(scratch, targetHashBytes)) {
                     // Found the target.
-                    StoredBlock storedBlock = StoredBlock.deserializeCompact(params, randomAccessFile);
+                    ByteBuffer buffer = ByteBuffer.allocate(StoredBlock.COMPACT_SERIALIZED_SIZE);
+                    FileChannel channel = randomAccessFile.getChannel();
+                    channel.read(buffer);
+                    buffer.flip();
+                    StoredBlock storedBlock = StoredBlock.deserializeCompact(params, buffer);
                     blockCache.put(hash, storedBlock);
                     return storedBlock;
                 }

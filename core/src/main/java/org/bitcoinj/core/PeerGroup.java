@@ -1049,8 +1049,14 @@ public class PeerGroup implements TransactionBroadcaster {
         final List<PeerAddress> addressList = Lists.newLinkedList();
         for (PeerDiscovery peerDiscovery : peerDiscoverers /* COW */) {
             InetSocketAddress[] addresses;
-            addresses = peerDiscovery.getPeers(requiredServices, peerDiscoveryTimeoutMillis, TimeUnit.MILLISECONDS);
-            for (InetSocketAddress address : addresses) addressList.add(new PeerAddress(params, address));
+            try {
+                addresses = peerDiscovery.getPeers(requiredServices, peerDiscoveryTimeoutMillis, TimeUnit.MILLISECONDS);
+            }catch(PeerDiscoveryException e) {
+                log.warn(e.getMessage());
+                continue;
+            }
+
+            for (InetSocketAddress address : addresses) addressList.add(new PeerAddress(address));
             if (addressList.size() >= maxPeersToDiscoverCount) break;
         }
         if (!addressList.isEmpty()) {

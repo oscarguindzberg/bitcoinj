@@ -57,6 +57,8 @@ public abstract class NetworkParameters {
     public static final String ID_TESTNET = "org.bitcoin.test";
     /** The string returned by getId() for regtest mode. */
     public static final String ID_REGTEST = "org.bitcoin.regtest";
+    /** The string returned by getId() for signet mode. */
+    public static final String ID_SIGNET = "org.bitcoin.signet";
     /** Unit test network. */
     public static final String ID_UNITTESTNET = "org.bitcoinj.unittest";
 

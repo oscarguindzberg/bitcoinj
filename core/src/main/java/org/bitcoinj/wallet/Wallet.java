@@ -4839,12 +4839,8 @@ public class Wallet extends BaseTaggableObject
             resetTxInputs(req, originalInputs);
 
             Coin fees = req.fee == null ? Coin.ZERO : req.fee;
-            if (lastCalculatedSize > 0) {
-                // If the size is exactly 1000 bytes then we'll over-pay, but this should be rare.
-                fees = fees.add(req.feePerKb.multiply(lastCalculatedSize).divide(1000));
-            } else {
-                fees = fees.add(req.feePerKb);  // First time around the loop.
-            }
+            // If the size is exactly 1000 bytes then we'll over-pay, but this should be rare.
+            fees = fees.add(req.feePerKb.multiply(lastCalculatedSize).divide(1000));
 
             if (needAtLeastReferenceFee && fees.compareTo(Transaction.REFERENCE_DEFAULT_MIN_TX_FEE) < 0)
                 fees = Transaction.REFERENCE_DEFAULT_MIN_TX_FEE;

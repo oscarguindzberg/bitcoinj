@@ -275,6 +275,7 @@ public class PeerGroup implements TransactionBroadcaster {
 
         @Override
         public Message onPreMessageReceived(Peer peer, Message m) {
+            // See https://github.com/bisq-network/bitcoinj/issues/28 for more info on addr msg handling
             if (m instanceof AddressMessage && addPeersFromAddressMessage) {
                 for( PeerAddress peerAddress : ((AddressMessage)m).getAddresses() ) {
                     addInactive(peerAddress);

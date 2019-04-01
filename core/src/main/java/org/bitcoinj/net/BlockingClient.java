@@ -149,10 +149,11 @@ public class BlockingClient implements MessageWriteTarget {
                 OutputStream stream = socket.getOutputStream();
                 stream.write(message);
                 stream.flush();
+            } else {
+                log.warn("Attempted to write to a closed socket.");
             }
         } catch (IOException e) {
-            if(!(e instanceof SocketException && e.toString().equals("Socket is closed")))
-                log.error("Error writing message to connection, closing connection", e);
+            log.error("Error writing message to connection, closing connection", e);
             closeConnection();
             throw e;
         }

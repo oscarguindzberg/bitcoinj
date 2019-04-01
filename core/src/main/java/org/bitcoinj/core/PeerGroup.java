@@ -640,17 +640,6 @@ public class PeerGroup implements TransactionBroadcaster {
         }
     };
 
-    private boolean isAlreadyAdded(PeerAddress peerAddress) {
-        boolean isAlreadyAdded = false;
-        for (PeerAddress a : inactives) {
-            if (a.getHostname() != null && a.getHostname().equals(peerAddress.getHostname())) {
-                isAlreadyAdded = true;
-                break;
-            }
-        }
-        return isAlreadyAdded;
-    }
-
     private void triggerConnections() {
         // Run on a background thread due to the need to potentially retry and back off in the background.
         if (!executor.isShutdown())
@@ -1876,7 +1865,14 @@ public class PeerGroup implements TransactionBroadcaster {
             } else {
                 backoffMap.get(address).trackFailure();
                 // Put back on inactive list
-                if (!isAlreadyAdded(address)) {
+                boolean inactiveContainsAddress = false;
+                for (PeerAddress a : inactives) {
+                    if (a.equalsIgnoringMetadata(address)) {
+                        inactiveContainsAddress = true;
+                        break;
+                    }
+                }
+                if (!inactiveContainsAddress) {
                     inactives.offer(address);
                 }
             }

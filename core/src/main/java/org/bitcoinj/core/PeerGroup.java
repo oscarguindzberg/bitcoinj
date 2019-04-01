@@ -1872,7 +1872,9 @@ public class PeerGroup implements TransactionBroadcaster {
             } else {
                 backoffMap.get(address).trackFailure();
                 // Put back on inactive list
-                inactives.offer(address);
+                if (!isAlreadyAdded(address)) {
+                    inactives.offer(address);
+                }
             }
 
             if (numPeers < getMaxConnections()) {

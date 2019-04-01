@@ -1051,9 +1051,7 @@ public class PeerGroup implements TransactionBroadcaster {
                 return false;
             }
             backoffMap.put(peerAddress, new ExponentialBackoff(peerBackoffParams));
-
-            if (!isAlreadyAdded(peerAddress))
-                inactives.offer(peerAddress);
+            inactives.offer(peerAddress);
 
             return true;
         } finally {

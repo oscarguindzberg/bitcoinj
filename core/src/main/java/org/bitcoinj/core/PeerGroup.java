@@ -621,8 +621,7 @@ public class PeerGroup implements TransactionBroadcaster {
                     long delay = retryTime - now;
                     log.info("Waiting {} msec before next connect attempt {}", delay, addrToTry == null ? "" : "to " + addrToTry);
 
-                    if (!isAlreadyAdded(addrToTry))
-                        inactives.add(addrToTry);
+                    inactives.add(addrToTry);
                     executor.schedule(this, delay, TimeUnit.MILLISECONDS);
                     return;
                 }

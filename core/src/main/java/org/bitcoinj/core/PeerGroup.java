@@ -1242,6 +1242,7 @@ public class PeerGroup implements TransactionBroadcaster {
             public void run() {
                 try {
                     log.info("Stopping ...");
+                    setDownloadPeer(null);
                     // Blocking close of all sockets.
                     channels.stopAsync();
                     channels.awaitTerminated();
@@ -1840,12 +1841,6 @@ public class PeerGroup implements TransactionBroadcaster {
                 final Peer newDownloadPeer = selectDownloadPeer(peers);
                 if (newDownloadPeer != null) {
                     setDownloadPeer(newDownloadPeer);
-
-                    // When using BlockingClient we get errors at shutdown caused by
-                    // startBlockChainDownloadFromPeer()
-                    // We add another check to terminate here if we have been shut down already
-                    if (!isRunning())
-                        return;
 
                     if (downloadListener != null) {
                         startBlockChainDownloadFromPeer(newDownloadPeer);

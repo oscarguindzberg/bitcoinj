@@ -527,6 +527,7 @@ public class Transaction extends ChildMessage {
     protected void unCache() {
         super.unCache();
         hash = null;
+        confidence = null;
     }
 
     protected static int calcLength(byte[] buf, int offset) {

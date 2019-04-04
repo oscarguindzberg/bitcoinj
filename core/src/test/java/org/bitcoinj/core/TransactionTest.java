@@ -22,6 +22,7 @@ import org.bitcoinj.crypto.TransactionSignature;
 import org.bitcoinj.params.*;
 import org.bitcoinj.script.*;
 import org.bitcoinj.testing.*;
+import org.bitcoinj.utils.Threading;
 import org.easymock.*;
 import org.junit.*;
 
@@ -29,6 +30,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.math.BigInteger;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import static org.bitcoinj.core.Utils.HEX;
 
 import static org.bitcoinj.core.Utils.uint32ToByteStreamLE;
@@ -735,4 +738,78 @@ public class TransactionTest {
             uint32ToByteStreamLE(getLockTime(), stream);
         }
     }
+
+    @Test
+    public void testConfidenceCacheForEmptyTxs() {
+        // Test 2 empty txs don't share the same TransactionConfidence instance
+        Transaction tx1 = new Transaction(UNITTEST);
+        tx1.getConfidence().setSource(Source.SELF);
+        Transaction tx2 = new Transaction(UNITTEST);
+        tx2.getConfidence().setSource(Source.NETWORK);
+        assertEquals(Source.SELF, tx1.getConfidence().getSource());
+        assertEquals(Source.NETWORK, tx2.getConfidence().getSource());
+    }
+
+    @Test
+    public void testConfidenceCacheModifyTx() {
+        tx.getConfidence().setSource(Source.SELF);
+        final AtomicBoolean listenerInvoked = new AtomicBoolean();
+        listenerInvoked.set(false);
+        tx.getConfidence().addEventListener(Threading.SAME_THREAD, new Listener() {
+            @Override
+            public void onConfidenceChanged(TransactionConfidence confidence, ChangeReason reason) {
+                listenerInvoked.set(true);
+            }
+        });
+        Sha256Hash originalId = tx.getTxId();
+        assertEquals("Before updating tx", tx.getTxId(), tx.getConfidence().getTransactionHash());
+        // Modify the tx so the tx id changes
+        tx.addOutput(new TransactionOutput(UNITTEST, null, Coin.COIN, ADDRESS));
+        // Test updating a tx does not make a tx have a pointer to a "deprecated" TransactionConfidence instance
+        assertEquals("After updating tx", tx.getTxId(), tx.getConfidence().getTransactionHash());
+
+        // Test updating a tx keeps the confidence source and listeners
+        assertEquals(Source.SELF, tx.getConfidence().getSource());
+        //Invoke the listeners, that is the only way we have to know the listener we added is still on the list.
+        tx.getConfidence().queueListeners(Listener.ChangeReason.SEEN_PEERS);
+        assertEquals(true, listenerInvoked.get());
+
+        // Check "deprecated" tx id was removed from confidence table
+        assertNull(Context.get().getConfidenceTable().get(originalId));
+    }
+
+//    Create a test that simulates multimple txs being constructed by multiple threads in parallel,
+//    modifying TxConfidenceTable might be subject to race conditions.
+//    Consider if all threads start with an empty tx, then they all start with the same TransactionConfidence.
+
+
+    @Test
+    public void testConfidenceCacheRaceCondition() {
+        Transaction tx1 = new Transaction(UNITTEST);
+        Transaction tx2 = new Transaction(UNITTEST);
+        tx1.getConfidence().setSource(Source.SELF);
+        tx1.addOutput(new TransactionOutput(UNITTEST, null, Coin.COIN, ADDRESS));
+        tx2.getConfidence().setSource(Source.NETWORK);
+
+        assertEquals(Source.SELF, tx1.getConfidence().getSource());
+        assertEquals(Source.NETWORK, tx2.getConfidence().getSource());
+    }
+
+    @Test
+    public void testConfidenceCacheRaceCondition2() {
+        Transaction tx1 = new Transaction(UNITTEST);
+        Transaction tx2 = new Transaction(UNITTEST);
+        tx1.getConfidence().setSource(Source.SELF);
+        tx2.getConfidence().setSource(Source.NETWORK);
+        tx1.addOutput(new TransactionOutput(UNITTEST, null, Coin.COIN, ADDRESS));
+
+        assertEquals(Source.SELF, tx1.getConfidence().getSource());
+        assertEquals(Source.NETWORK, tx2.getConfidence().getSource());
+    }
+
+
+
+
+
+
 }

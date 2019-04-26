@@ -170,6 +170,7 @@ public class TransactionOutput extends ChildMessage {
         checkNotNull(value);
         unCache();
         this.value = value.value;
+        updateTransactionConfidenceId();
     }
 
     /**
@@ -225,6 +226,13 @@ public class TransactionOutput extends ChildMessage {
     public Coin getMinNonDustValue() {
         return getMinNonDustValue(Transaction.REFERENCE_DEFAULT_MIN_TX_FEE.multiply(3));
     }
+
+    private void updateTransactionConfidenceId() {
+        if (parent != null) {
+            getParentTransaction().updateConfidenceId();
+        }
+    }
+
 
     /**
      * Sets this objects availableForSpending flag to false and the spentBy pointer to the given input.

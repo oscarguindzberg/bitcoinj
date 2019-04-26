@@ -554,7 +554,12 @@ public class Transaction extends ChildMessage {
         super.unCache();
         cachedTxId = null;
         cachedWTxId = null;
-        confidence = null;
+    }
+
+    protected void updateConfidenceId() {
+        if (confidence != null) {
+            Context.get().getConfidenceTable().updateTxId(confidence, this.getTxId());
+        }
     }
 
     protected static int calcLength(byte[] buf, int offset) {
@@ -882,6 +887,7 @@ public class Transaction extends ChildMessage {
         inputs.clear();
         // You wanted to reserialize, right?
         this.length = this.unsafeBitcoinSerialize().length;
+        updateConfidenceId();
     }
 
     /**
@@ -904,6 +910,7 @@ public class Transaction extends ChildMessage {
         input.setParent(this);
         inputs.add(input);
         adjustLength(inputs.size(), input.length);
+        updateConfidenceId();
         return input;
     }
 
@@ -989,6 +996,7 @@ public class Transaction extends ChildMessage {
         outputs.clear();
         // You wanted to reserialize, right?
         this.length = this.unsafeBitcoinSerialize().length;
+        updateConfidenceId();
     }
 
     /**
@@ -999,6 +1007,7 @@ public class Transaction extends ChildMessage {
         to.setParent(this);
         outputs.add(to);
         adjustLength(outputs.size(), to.length);
+        updateConfidenceId();
         return to;
     }
 
@@ -1457,6 +1466,7 @@ public class Transaction extends ChildMessage {
             log.warn("You are setting the lock time on a transaction but none of the inputs have non-default sequence numbers. This will not do what you expect!");
         }
         this.lockTime = lockTime;
+        updateConfidenceId();
     }
 
     public long getVersion() {
@@ -1466,6 +1476,7 @@ public class Transaction extends ChildMessage {
     public void setVersion(int version) {
         this.version = version;
         unCache();
+        updateConfidenceId();
     }
 
     /** Returns an unmodifiable view of all inputs. */

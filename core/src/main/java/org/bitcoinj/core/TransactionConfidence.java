@@ -76,7 +76,7 @@ public class TransactionConfidence {
     /** The time the transaction was last announced to us. */
     private Date lastBroadcastedAt;
     /** The Transaction that this confidence object is associated with. */
-    private final Sha256Hash hash;
+    private Sha256Hash hash;
     // Lazily created listeners array.
     private CopyOnWriteArrayList<ListenerRegistration<Listener>> listeners;
 
@@ -513,5 +513,9 @@ public class TransactionConfidence {
 
     public Sha256Hash getTransactionHash() {
         return hash;
+    }
+
+    public void updateTransactionHash(Sha256Hash hash) {
+        this.hash = hash;
     }
 }

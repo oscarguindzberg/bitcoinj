@@ -225,6 +225,7 @@ public class TransactionInput extends ChildMessage {
     public void setSequenceNumber(long sequence) {
         unCache();
         this.sequence = sequence;
+        updateTransactionConfidenceId();
     }
 
     /**
@@ -261,6 +262,7 @@ public class TransactionInput extends ChildMessage {
         // 40 = previous_outpoint (36) + sequence (4)
         int newLength = 40 + (scriptBytes == null ? 1 : VarInt.sizeOf(scriptBytes.length) + scriptBytes.length);
         adjustLength(newLength - oldLength);
+        updateTransactionConfidenceId();
     }
 
     /**
@@ -292,6 +294,12 @@ public class TransactionInput extends ChildMessage {
      */
     public void setWitness(TransactionWitness witness) {
         this.witness = witness;
+    }
+
+    private void updateTransactionConfidenceId() {
+        if (parent != null) {
+            getParentTransaction().updateConfidenceId();
+        }
     }
 
     /**

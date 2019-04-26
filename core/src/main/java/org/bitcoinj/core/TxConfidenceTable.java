@@ -39,6 +39,13 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public class TxConfidenceTable {
     protected ReentrantLock lock = Threading.lock("txconfidencetable");
 
+    public void updateTxId(TransactionConfidence confidence, Sha256Hash newTxId) {
+        WeakConfidenceReference wcr = table.remove(confidence.getTransactionHash());
+        //wcr.get().updateTransactionHash(newTxId);
+        confidence.updateTransactionHash(newTxId);
+        table.put(newTxId, wcr);
+    }
+
     private static class WeakConfidenceReference extends WeakReference<TransactionConfidence> {
         public Sha256Hash hash;
         public WeakConfidenceReference(TransactionConfidence confidence, ReferenceQueue<TransactionConfidence> queue) {
